@@ -44,7 +44,7 @@ import java.util.Random;
 public class DataCollection extends AppCompatActivity{
     private Button btnSet,btnStart,btnShowMap;
     private Dialog dialog_nodeInfo;
-    private String data="";
+    //private String data="";
     private HighPassFilter highPassFilter;
     private MovingAverageFilter movingAverageFilter;
     SharedPreferences sp;
@@ -66,7 +66,7 @@ public class DataCollection extends AppCompatActivity{
     private float[] accelerometerValues = new float[3];
 
     //@Extra
-    private String previous_node_name="First Node",current_nodeName="";
+    private String previous_node_name="",current_nodeName="";
     private float previous_node_x=0,previous_node_y = 0, previous_node_z=1;
     private String pre_nodeId;
     private double pre_X;
@@ -76,15 +76,16 @@ public class DataCollection extends AppCompatActivity{
     private ListView mListView;
     private NodeListAdapter adapter;
     private ArrayList<NodeData> nodeList;
-    private boolean isReceiverRegistered = false;
+    private boolean isReceiverRegistered = false , isFirstNodeCreated=false;
     //extra
 
     // dialog
-    private TextView sourceNodeName, sourceNodeInfo;
+    private TextView sourceNodeName, sourceNodeInfo,eFirstCreatedNodeName;
     private EditText adjacentNodeName, adjacentNodeInfo;
 
-    private TextView previous_nodeTextview,distanceShow,floorTextview;
-    private Button saveBtn,btncreateNewNode;
+    private TextView previous_nodeTextview,distanceShow,floorTextview,btnCreateNewNode;
+    private Button saveBtn;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -177,16 +178,16 @@ public class DataCollection extends AppCompatActivity{
 
 
                         String isNodeExist = sp.getString(current_nodeName,"");
+                        //System.out.println(isNodeExist);
                         if(isNodeExist.isEmpty()){
-                            System.out.println("Previous Existed Node");
-                            spEditor.putString(current_nodeName,"Found");
-                            //createNode(current_nodeName, details[0], details[1], details[2]);
-                        }
-                        else{
                             System.out.println("Previous Existed Node Not Found");
+                            spEditor.putString(current_nodeName,"Found");
+                            spEditor.apply();
+                            createNode(current_nodeName, details[0], details[1], details[2]);
                         }
 
-                        //createEdge(current_nodeName, previous_node_name, calculate.getWalkingDistance());
+
+                        createEdge(current_nodeName, previous_node_name, calculate.getWalkingDistance());
 
 
 
@@ -223,52 +224,81 @@ public class DataCollection extends AppCompatActivity{
             // @ Set the start from button can choose from the already saved node ..
             // @ if there is no saved node create a node first..
 
-            AlertDialog.Builder alertDialog = new
-                    AlertDialog.Builder(this);
+            if(isFirstNodeCreated){
+                AlertDialog.Builder alertDialog = new
+                        AlertDialog.Builder(this);
 
-            View rowList = getLayoutInflater().inflate(R.layout.row, null);
+                View rowList = getLayoutInflater().inflate(R.layout.row, null);
 
-            mListView = rowList.findViewById(R.id.listViewnew);
-
-
-            nodeList = new ArrayList<>();
-
-            adapter = new NodeListAdapter(this, R.layout.list_view, nodeList);
-            mListView.setAdapter(adapter);
-
-            adapter.notifyDataSetChanged();
-            alertDialog.setView(rowList);
-            AlertDialog dialog = alertDialog.create();
-            dialog.show();
-
-            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                mListView = rowList.findViewById(R.id.listViewnew);
 
 
-                    pre_nodeId=nodeList.get(i).getID();
-                    pre_X=nodeList.get(i).getX();
-                    pre_Y=nodeList.get(i).getY();
-                    pre_Z=nodeList.get(i).getZ();
-                    previous_node_x = (float)pre_X;
-                    previous_node_y = (float)pre_Y;
-                    previous_node_z = (float)pre_Z;
-                    floorTextview.setText(Float.toString(previous_node_z));
-                    previous_node_name = pre_nodeId;
-                    previous_nodeTextview.setText(previous_node_name);
-                    Toast.makeText(DataCollection.this, "X: " + previous_node_x+" Z: "+previous_node_z, Toast.LENGTH_SHORT).show();
+                nodeList = new ArrayList<>();
 
-                    dialog.dismiss();
+                adapter = new NodeListAdapter(this, R.layout.list_view, nodeList);
+                mListView.setAdapter(adapter);
 
+                adapter.notifyDataSetChanged();
+                alertDialog.setView(rowList);
+                AlertDialog dialog = alertDialog.create();
+                dialog.show();
+
+                mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+
+                        pre_nodeId=nodeList.get(i).getID();
+                        pre_X=nodeList.get(i).getX();
+                        pre_Y=nodeList.get(i).getY();
+                        pre_Z=nodeList.get(i).getZ();
+                        previous_node_x = (float)pre_X;
+                        previous_node_y = (float)pre_Y;
+                        previous_node_z = (float)pre_Z;
+                        floorTextview.setText(Float.toString(previous_node_z));
+                        previous_node_name = pre_nodeId;
+                        previous_nodeTextview.setText(previous_node_name);
+                        Toast.makeText(DataCollection.this, "X: " + previous_node_x+" Z: "+previous_node_z, Toast.LENGTH_SHORT).show();
+
+                        dialog.dismiss();
+
+                    }
+                });
+
+                if (isNetworkAvailable()) {
+                    FetchNodeDataTask fetchNodeDataTask = new FetchNodeDataTask();
+                    fetchNodeDataTask.execute();
+                } else {
+                    Toast.makeText(this, "No internet connection available", Toast.LENGTH_SHORT).show();
                 }
-            });
-
-            if (isNetworkAvailable()) {
-                FetchNodeDataTask fetchNodeDataTask = new FetchNodeDataTask();
-                fetchNodeDataTask.execute();
-            } else {
-                Toast.makeText(this, "No internet connection available", Toast.LENGTH_SHORT).show();
             }
+            else{
+                AlertDialog.Builder alertDialog_nodeInfo = new
+                        AlertDialog.Builder(this);
+
+                View view = getLayoutInflater().inflate(R.layout.start_node_info_dialog, null);
+                eFirstCreatedNodeName = view.findViewById(R.id.firstNodeName);
+                btnCreateNewNode = view.findViewById(R.id.saveNewNodeBtn);
+
+                alertDialog_nodeInfo.setView(view);
+                AlertDialog dialog_nodeInfo = alertDialog_nodeInfo.create();
+                dialog_nodeInfo.show();
+
+                btnCreateNewNode.setOnClickListener(v1 -> {
+                    previous_node_name = eFirstCreatedNodeName.getText().toString();
+                    previous_node_x=0;
+                    previous_node_y=0;
+                    previous_node_z=1;
+                    previous_nodeTextview.setText(previous_node_name);
+                    floorTextview.setText(Float.toString(previous_node_z));
+                    dialog_nodeInfo.dismiss();
+                    isFirstNodeCreated=true;
+                    createNode(previous_node_name,previous_node_x,previous_node_y,previous_node_z);
+                });
+
+            }
+
+
         });
     }
 
@@ -309,6 +339,7 @@ public class DataCollection extends AppCompatActivity{
             e.printStackTrace();
         }
         new SaveDataTask().execute(postData);
+        isFirstNodeCreated=true;
 
     }
 
@@ -467,9 +498,11 @@ public class DataCollection extends AppCompatActivity{
                         double nodeY = nodeObject.getDouble("node_y");
                         double nodeZ = nodeObject.getDouble("node_z");
                         //data += nodeNumber+"-"+nodeX+"-"+nodeY+"-"+nodeZ+"---";
+                        isFirstNodeCreated = true;
                         String nodeExist = sp.getString(nodeNumber,"");
                         if(nodeExist.isEmpty()){
                             spEditor.putString(nodeNumber,"Found");
+                            spEditor.apply();
                         }
                         NodeData nodeData = new NodeData(id, nodeNumber, nodeX, nodeY, nodeZ);
                         nodeList.add(nodeData);
@@ -563,11 +596,14 @@ public class DataCollection extends AppCompatActivity{
                         double nodeX = nodeObject.getDouble("node_x");
                         double nodeY = nodeObject.getDouble("node_y");
                         double nodeZ = nodeObject.getDouble("node_z");
-                        String dt = nodeX+"-"+nodeY+"-"+nodeZ;
+                        isFirstNodeCreated = true;
                         String nodeExist = sp.getString(nodeNumber,"");
                         if(nodeExist.isEmpty()){
-                            spEditor.putString(nodeNumber,dt);
+                            System.out.println(nodeNumber);
+                            spEditor.putString(nodeNumber,"found");
+                            spEditor.apply();
                         }
+
                     }
 
                     // Notify the adapter of the data change

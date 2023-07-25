@@ -47,7 +47,7 @@
                 android:layout_height="26dp" />
 
             <EditText
-                android:id="@+id/sourceNodeName"
+                android:id="@+id/firstNodeName"
                 android:layout_width="180dp"
                 android:layout_height="35dp"
                 android:layout_marginLeft="10dp"
@@ -116,7 +116,7 @@
                 android:layout_width="96dp"
                 android:layout_height="30dp" />
 
-            <TextView android:id="@+id/saveBtn"
+            <TextView android:id="@+id/saveNewNodeBtn"
                 android:textStyle="bold"
                 android:layout_gravity="center_horizontal|center"
                 android:gravity="center"
