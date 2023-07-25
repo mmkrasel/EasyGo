@@ -101,13 +101,14 @@ public class MyCanvas extends View {
             String[] coordinates = nodeData.split("_");
 
             String nodeName = coordinates[0];
-            float nodeX = Float.parseFloat(coordinates[1])*50*(-1);
-            float nodeY = Float.parseFloat(coordinates[2])*50;
-            float nodeZ = Float.parseFloat(coordinates[3])*50;
+            float nodeX = Float.parseFloat(coordinates[1])*100*(-1);
+            float nodeY = Float.parseFloat(coordinates[2])*100;
+            float nodeZ = Float.parseFloat(coordinates[3])*100;
+            if(nodeZ/100.0==6.0) continue;
             // Add the CircleCoordinates object to the ArrayList
             tempCircleCoordinateObject = new CircleCoordinates(nodeX, nodeY,nodeZ,nodeName);
             coordinateObjectHashMap.put(nodeName,tempCircleCoordinateObject);
-            System.out.println(nodeName+"->"+tempCircleCoordinateObject.getX());
+            System.out.println(nodeName+"->"+tempCircleCoordinateObject.getZ());
             circleCoordinatesList.add(tempCircleCoordinateObject);
 
         }
@@ -120,17 +121,22 @@ public class MyCanvas extends View {
             String nodeName2 = edgeDetails[1];
             float distance = Float.parseFloat(edgeDetails[2]);
 
+            System.out.println(nodeName1+"->"+"->"+nodeName2+"->");
+            if(coordinateObjectHashMap.containsKey(nodeName1) && coordinateObjectHashMap.containsKey(nodeName2)){
+                tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName1);
+                float nodeX1 =tempCircleCoordinateObject.getX();
+                float nodeY1 = tempCircleCoordinateObject.getY();
+                float nodeZ1 = tempCircleCoordinateObject.getZ();
 
-            tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName1);
-            float nodeX1 =tempCircleCoordinateObject.getX();
-            float nodeY1 = tempCircleCoordinateObject.getY();
-            float nodeZ1 = tempCircleCoordinateObject.getZ();
+                tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName2);
+                float nodeX2 =tempCircleCoordinateObject.getX();
+                float nodeY2 = tempCircleCoordinateObject.getY();
+                float nodeZ2 = tempCircleCoordinateObject.getZ();
 
-            tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName2);
-            float nodeX2 =tempCircleCoordinateObject.getX();
-            float nodeY2 = tempCircleCoordinateObject.getY();
-            float nodeZ2 = tempCircleCoordinateObject.getZ();
-            lineCoordinatesArrayList.add(new LineCoordinates(nodeX1, nodeY1,nodeX2, nodeY2));
+                if(nodeZ2/100.0==6.0) continue;
+                lineCoordinatesArrayList.add(new LineCoordinates(nodeX1, nodeY1,nodeX2, nodeY2));
+            }
+
 
         }
 

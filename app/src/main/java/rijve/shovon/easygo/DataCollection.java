@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEventListener;
@@ -46,6 +47,8 @@ public class DataCollection extends AppCompatActivity{
     private String data="";
     private HighPassFilter highPassFilter;
     private MovingAverageFilter movingAverageFilter;
+    SharedPreferences sp;
+    SharedPreferences.Editor spEditor;
     private MyBroadcastReceiver accelerometer_receiver , gyroscope_receiver,magnetometer_receiver;
 
     private SensorManager sensorManager;
@@ -101,8 +104,11 @@ public class DataCollection extends AppCompatActivity{
         sensorService = new SensorService();
 
 
+        sp = getSharedPreferences("nodeInfo",MODE_PRIVATE);
+        spEditor = sp.edit();
 
-
+        //Fetch all the data...
+        new FetchNodeDetailsTask().execute();
 
         btnShowMap.setOnClickListener(v -> {
             Intent I = new Intent(DataCollection.this, Map_node.class);
@@ -170,9 +176,17 @@ public class DataCollection extends AppCompatActivity{
                         //String edgeInfo = previous_node_name+"___"+current_nodeName+"___"+calculate.getWalkingDistance();
 
 
+                        String isNodeExist = sp.getString(current_nodeName,"");
+                        if(isNodeExist.isEmpty()){
+                            System.out.println("Previous Existed Node");
+                            spEditor.putString(current_nodeName,"Found");
+                            //createNode(current_nodeName, details[0], details[1], details[2]);
+                        }
+                        else{
+                            System.out.println("Previous Existed Node Not Found");
+                        }
 
-                        createNode(current_nodeName, details[0], details[1], details[2]);
-                        createEdge(current_nodeName, previous_node_name, calculate.getWalkingDistance());
+                        //createEdge(current_nodeName, previous_node_name, calculate.getWalkingDistance());
 
 
 
@@ -453,7 +467,10 @@ public class DataCollection extends AppCompatActivity{
                         double nodeY = nodeObject.getDouble("node_y");
                         double nodeZ = nodeObject.getDouble("node_z");
                         //data += nodeNumber+"-"+nodeX+"-"+nodeY+"-"+nodeZ+"---";
-
+                        String nodeExist = sp.getString(nodeNumber,"");
+                        if(nodeExist.isEmpty()){
+                            spEditor.putString(nodeNumber,"Found");
+                        }
                         NodeData nodeData = new NodeData(id, nodeNumber, nodeX, nodeY, nodeZ);
                         nodeList.add(nodeData);
                     }
@@ -475,6 +492,93 @@ public class DataCollection extends AppCompatActivity{
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
         return false;
+    }
+
+    private class FetchNodeDetailsTask extends AsyncTask<Void, Void, String> {
+        private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/nodeinfo/read.php";
+
+        @Override
+        protected String doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String result = null;
+
+            try {
+                // Create the URL object
+                URL url = new URL(API_URL);
+
+                // Create the HTTP connection
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                // Connect to the API
+                urlConnection.connect();
+
+                // Read the response
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuilder builder = new StringBuilder();
+
+                if (inputStream != null) {
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        builder.append(line);
+                    }
+
+                    result = builder.toString();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                // Close the connections and readers
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    // Parse the JSON response
+                    JSONObject response = new JSONObject(result);
+                    JSONArray data = response.getJSONArray("data");
+
+                    // Iterate over the JSON array and add nodes to the nodeList
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject nodeObject = data.getJSONObject(i);
+                        String id = nodeObject.getString("id");
+                        String nodeNumber = nodeObject.getString("node_number");
+                        double nodeX = nodeObject.getDouble("node_x");
+                        double nodeY = nodeObject.getDouble("node_y");
+                        double nodeZ = nodeObject.getDouble("node_z");
+                        String dt = nodeX+"-"+nodeY+"-"+nodeZ;
+                        String nodeExist = sp.getString(nodeNumber,"");
+                        if(nodeExist.isEmpty()){
+                            spEditor.putString(nodeNumber,dt);
+                        }
+                    }
+
+                    // Notify the adapter of the data change
+                    //adapter.notifyDataSetChanged();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Toast.makeText(DataCollection.this, "Failed to fetch node data", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
 }
