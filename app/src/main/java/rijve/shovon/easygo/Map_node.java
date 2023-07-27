@@ -24,13 +24,17 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Map_node extends AppCompatActivity {
     private MyCanvas myCanvas;
     private Button btnZoomIn;
-    private Button btnZoomOut;
+    private Button btnZoomOut,btnSixFloor,btnGroundFloor;
+    private boolean isDataCollectionCompleted=false;
     private RequestQueue requestQueue;
+    public double setFloor =6.0;
     private String nodedatastring = "",edgeDataString="";
+    private HashMap<String,String> selectedNodesHashMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,10 +42,31 @@ public class Map_node extends AppCompatActivity {
         setContentView(R.layout.activity_map_node);
 
         // Initialize views
+        btnSixFloor = findViewById(R.id.six);
+        btnGroundFloor = findViewById(R.id.ground);
         btnZoomIn = findViewById(R.id.btnZoomIn);
         btnZoomOut = findViewById(R.id.btnZoomOut);
         myCanvas = findViewById(R.id.myCanvas);
 
+
+
+
+        btnGroundFloor.setOnClickListener(v -> {
+            myCanvas.clearCanvas();
+            setFloor=1.0;
+            selectedNodesHashMap.clear();
+            nodedatastring="";
+            edgeDataString="";
+            new FetchNodeDataTask().execute();
+        });
+        btnSixFloor.setOnClickListener(v -> {
+            myCanvas.clearCanvas();
+            setFloor=6.0;
+            selectedNodesHashMap.clear();
+            nodedatastring="";
+            edgeDataString="";
+            new FetchNodeDataTask().execute();
+        });
         // Set initial background image for MyCanvas
         // Bitmap backgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.background_image);
         // myCanvas.setBackgroundImage(backgroundBitmap);
@@ -65,7 +90,7 @@ public class Map_node extends AppCompatActivity {
         requestQueue = Volley.newRequestQueue(this);
 
         // Fetch node data and create circles on canvas
-        new FetchNodeDataTask().execute();
+
     }
 
 
@@ -136,19 +161,26 @@ public class Map_node extends AppCompatActivity {
                         String nodeName1 = nodeObject.getString("node1");
                         String nodeName2 = nodeObject.getString("node2");
                         String nodeDistance   = nodeObject.getString("distance");
-                        if(nodeName1.equals("campus")) continue;
-                        if(edgeDataString.isEmpty()){
-                            edgeDataString += nodeName1+"_"+nodeName2 + "_" + nodeDistance;
+                        //if(nodeName1.equals("campus")) continue;
+                        if(selectedNodesHashMap.containsKey(nodeName1) && selectedNodesHashMap.containsKey(nodeName2)){
+                            if(edgeDataString.isEmpty()){
+                                edgeDataString += selectedNodesHashMap.get(nodeName1)+"_"+selectedNodesHashMap.get(nodeName2);
+                                //edgeDataString += nodeName1+"_"+nodeName2 + "_" + nodeDistance;
+                            }
+                            else{
+                                edgeDataString += "___"+selectedNodesHashMap.get(nodeName1)+"_"+selectedNodesHashMap.get(nodeName2);
+                                //edgeDataString += "___"+nodeName1+"_"+nodeName2 + "_" + nodeDistance;
+                            }
                         }
-                        else{
-                            edgeDataString += "___"+nodeName1+"_"+nodeName2 + "_" + nodeDistance;
-                        }
+
                     }
                     Toast.makeText(Map_node.this, "Data fetch data" + nodedatastring, Toast.LENGTH_SHORT).show();
-                    System.out.println(edgeDataString);
+                    //System.out.println(edgeDataString);
                     // Create circles on canvas using the node data
                     //need to remove it later
+                    isDataCollectionCompleted=true;
 
+                    System.out.println(edgeDataString);
                     //String fakeData="campus main_0_0_1___reception_0_10_1___A_0_15_1___central lobby_0_20_1___B_0_30_1___Room102_0_50_1___Moshjid_0_60_1___C_0_65_1___Lift1_-5_65_1___Room103_-10_67_1___Room105_-15_67_1___toilet1_-20_67_1___Room107_-30_67_1___Room110_-40_67_1___Room104_-10_63_1___Room106_-15_63_1___Room108_-20_63_1___Room109_-30_63_1___Room111_-40_63_1___Stairs1_-10_15_1___Toilet2_-15_15_1___Auditorium_-40_15_1___FUB Entry_-50_15_1";
                     //String fakeDataEdge = "campus main_0_0_1_reception_0_10_1_10@reception_0_10_1_A_0_15_1_5@A_0_15_1_central lobby_0_20_1_5@A_0_15_1_Stairs1_-10_15_1_10@central lobby_0_20_1_B_0_30_1_10@B_0_30_1_Room102_0_50_1_20@Room102_0_50_1_Moshjid_0_60_1_10@Moshjid_0_60_1_C_0_65_1_5@C_0_65_1_Lift1_-5_65_1_5@Lift1_-5_65_1_Room103_-10_67_1_7@Lift1_-5_65_1_Room104_-10_63_1_7@Room103_-10_67_1_Room105_-15_67_1_5@Room105_-15_67_1_toilet1_-20_67_1_5@toilet1_-20_67_1_Room107_-30_67_1_10@Room107_-30_67_1_Room110_-40_67_1_10@Room104_-10_63_1_Room106_-15_63_1_5@Room106_-15_63_1_Room108_-20_63_1_5@Room108_-20_63_1_Room109_-30_63_1_10@Room109_-30_63_1_Room111_-40_63_1_10@Stairs1_-10_15_1_Toilet2_-15_15_1_5@Toilet2_-15_15_1_Auditorium_-40_15_1_25@Auditorium_-40_15_1_FUB Entry_-50_15_1_10";
                     myCanvas.setNodeData(nodedatastring,edgeDataString);
@@ -229,17 +261,23 @@ public class Map_node extends AppCompatActivity {
                         JSONObject nodeObject = data.getJSONObject(i);
                         String id = nodeObject.getString("id");
                         String nodeName = nodeObject.getString("node_number");
-                        double nodeX = nodeObject.getDouble("node_x");
-                        double nodeY = nodeObject.getDouble("node_y");
-                        double nodeZ = nodeObject.getDouble("node_z");
-                        if(nodedatastring.isEmpty()){
-                            nodedatastring += nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
+                        double nodeX = nodeObject.getDouble("node_x")*50*-1;
+                        double nodeY = nodeObject.getDouble("node_y")*50;
+                        double nodeZ = nodeObject.getDouble("node_z")*50;
+
+                        if(nodeZ==setFloor*50){
+                            //System.out.println(nodeName);
+                            if(nodedatastring.isEmpty()){
+                                nodedatastring += nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
+                            }
+                            else{
+                                nodedatastring += "___"+nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
+                            }
+                            selectedNodesHashMap.put(nodeName,nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ);
                         }
-                        else{
-                            nodedatastring += "___"+nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
-                        }
+
                     }
-                    Toast.makeText(Map_node.this, "Data fetch data" + nodedatastring, Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(Map_node.this, "Data fetch data" + nodedatastring, Toast.LENGTH_SHORT).show();
                     System.out.println(nodedatastring);
                     new Map_node.FetchNodeEdgeDataTask().execute();
                     // Create circles on canvas using the node data

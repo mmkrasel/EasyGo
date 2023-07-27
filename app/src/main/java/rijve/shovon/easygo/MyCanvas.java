@@ -44,13 +44,25 @@ public class MyCanvas extends View {
     private Path roadPath;
 
 
-    private ArrayList<CircleCoordinates> circleCoordinatesList;
-    private ArrayList<LineCoordinates> lineCoordinatesList;
+    private ArrayList<CircleCoordinates> circleCoordinatesList = new ArrayList<>();
+    private ArrayList<LineCoordinates> lineCoordinatesList = new ArrayList<>();
 
     public MyCanvas(Context context) {
         super(context);
         init();
     }
+
+    public void clearCanvas() {
+
+        circleCoordinatesList.clear();
+        lineCoordinatesList.clear();
+        backgroundImage = null;
+        System.out.println(circleCoordinatesList.size());
+        System.out.println(lineCoordinatesList.size());
+        invalidate();
+    }
+
+
 
 
 
@@ -101,15 +113,13 @@ public class MyCanvas extends View {
             String[] coordinates = nodeData.split("_");
 
             String nodeName = coordinates[0];
-            float nodeX = Float.parseFloat(coordinates[1])*100*(-1);
-            float nodeY = Float.parseFloat(coordinates[2])*100;
-            float nodeZ = Float.parseFloat(coordinates[3])*100;
-            if(nodeZ/100.0==6.0) continue;
+            float nodeX = Float.parseFloat(coordinates[1]);
+            float nodeY = Float.parseFloat(coordinates[2]);
+            float nodeZ = Float.parseFloat(coordinates[3]);
+
             // Add the CircleCoordinates object to the ArrayList
             tempCircleCoordinateObject = new CircleCoordinates(nodeX, nodeY,nodeZ,nodeName);
-            coordinateObjectHashMap.put(nodeName,tempCircleCoordinateObject);
-            System.out.println(nodeName+"->"+tempCircleCoordinateObject.getZ());
-            circleCoordinatesList.add(tempCircleCoordinateObject);
+            this.circleCoordinatesList.add(tempCircleCoordinateObject);
 
         }
 
@@ -118,30 +128,22 @@ public class MyCanvas extends View {
             String[] edgeDetails = edgeInfo.split("_");
 
             String nodeName1 = edgeDetails[0];
-            String nodeName2 = edgeDetails[1];
-            float distance = Float.parseFloat(edgeDetails[2]);
+            float nodeX1 = Float.parseFloat(edgeDetails[1]);
+            float nodeY1 =Float.parseFloat(edgeDetails[2]);
+            float nodeZ1 = Float.parseFloat(edgeDetails[3]);
+            String nodeName2 =edgeDetails[4];
+            float nodeX2 =Float.parseFloat(edgeDetails[5]);
+            float nodeY2 = Float.parseFloat(edgeDetails[6]);
+            float nodeZ2 = Float.parseFloat(edgeDetails[7]);
 
-            System.out.println(nodeName1+"->"+"->"+nodeName2+"->");
-            if(coordinateObjectHashMap.containsKey(nodeName1) && coordinateObjectHashMap.containsKey(nodeName2)){
-                tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName1);
-                float nodeX1 =tempCircleCoordinateObject.getX();
-                float nodeY1 = tempCircleCoordinateObject.getY();
-                float nodeZ1 = tempCircleCoordinateObject.getZ();
 
-                tempCircleCoordinateObject = coordinateObjectHashMap.get(nodeName2);
-                float nodeX2 =tempCircleCoordinateObject.getX();
-                float nodeY2 = tempCircleCoordinateObject.getY();
-                float nodeZ2 = tempCircleCoordinateObject.getZ();
-
-                if(nodeZ2/100.0==6.0) continue;
-                lineCoordinatesArrayList.add(new LineCoordinates(nodeX1, nodeY1,nodeX2, nodeY2));
-            }
-
+            this.lineCoordinatesList.add(new LineCoordinates(nodeX1, nodeY1,nodeX2, nodeY2));
+            System.out.println(nodeName1+" -> "+nodeName2);
 
         }
 
-        this.lineCoordinatesList = lineCoordinatesArrayList;
-        this.circleCoordinatesList = circleCoordinatesList;
+        //this.lineCoordinatesList = lineCoordinatesArrayList;
+        //this.circleCoordinatesList = circleCoordinatesList;
         invalidate();
     }
 

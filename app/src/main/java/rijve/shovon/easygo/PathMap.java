@@ -3,6 +3,7 @@ package rijve.shovon.easygo;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
@@ -22,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PathMap extends AppCompatActivity {
@@ -29,10 +31,15 @@ public class PathMap extends AppCompatActivity {
     private MyCanvas myCanvas;
     boolean isCompleted1=false,isCompleted2=false;
     private Button btnZoomIn;
-    private Button btnZoomOut;
+    private Button btnZoomOut,nextBtn,previousBtn;
     private RequestQueue requestQueue;
     private HashMap<String, String> coordinateValue = new HashMap<>();
     private String Path="";
+    private ArrayList<String> nodeList = new ArrayList<>();
+    private ArrayList<String> edgeList = new ArrayList<>();
+    private int floor_index=0;
+    SharedPreferences sp;
+    SharedPreferences.Editor spEditor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +49,16 @@ public class PathMap extends AppCompatActivity {
         sourceNode = intent.getStringExtra("sourceNode");
         destinationNode = intent.getStringExtra("destinationNode");
 
+
         btnZoomIn = findViewById(R.id.btnZoomIn);
         btnZoomOut = findViewById(R.id.btnZoomOut);
         myCanvas = findViewById(R.id.myCanvas);
+        nextBtn = findViewById(R.id.next);
+        previousBtn = findViewById(R.id.previous);
+
+        sp = getSharedPreferences("nodeInfo",MODE_PRIVATE);
+        spEditor = sp.edit();
+
         btnZoomIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -59,21 +73,59 @@ public class PathMap extends AppCompatActivity {
             }
         });
 
+
+
+        nextBtn.setOnClickListener(v -> {
+            String nodeInfo="",edgeInfo="";
+            if(floor_index+1<nodeList.size() || floor_index+1<edgeList.size()){
+                if(floor_index+1<nodeList.size()){
+                    nodeInfo = nodeList.get(floor_index+1);
+                }
+                if(floor_index+1<edgeList.size()){
+                    edgeInfo = edgeList.get(floor_index+1);
+                }
+                floor_index++;
+                if(!nodeInfo.isEmpty() || !edgeInfo.isEmpty()){
+                    myCanvas.clearCanvas();
+                    myCanvas.setNodeData(nodeInfo,edgeInfo);
+                    nodeInfo="";
+                    edgeInfo="";
+                }
+            }
+
+        });
+        previousBtn.setOnClickListener(v -> {
+            String nodeInfo="",edgeInfo="";
+            if(floor_index>0){
+                if(nodeList.size()>0) nodeInfo = nodeList.get(floor_index-1);
+                if(edgeList.size()>0){
+                    edgeInfo = edgeList.get(floor_index-1);
+                }
+                floor_index--;
+                if(!nodeInfo.isEmpty() || !edgeInfo.isEmpty()){
+                    myCanvas.clearCanvas();
+                    myCanvas.setNodeData(nodeInfo,edgeInfo);
+                    nodeInfo="";
+                    edgeInfo="";
+                }
+            }
+        });
+
         // Initialize RequestQueue
         requestQueue = Volley.newRequestQueue(this);
 
         //System.out.println(sourceNode+"   "+destinationNode);
+        //Path="";
+        //Path = "campus main->reception->common 001A->central lobby->common 003A->room 102->common 004A->common 005A->lift 002A->stairs 003A->common 009A->room 113->room 114->room 115->stairs 005A->common 010A->toilet 003A->lecture gallery ->wifi zone->common 011A->lift 004A->lift 005F->CSE department->common 014F->room 647->room 648";
 
-        new PathMap.FetchNodeDataTask().execute();
+        //new PathMap.FetchShortestPathDataTask().execute();
         new PathMap.FetchNodeDataTaskCoordinates().execute();
 
+        System.out.println(Path);
+        //designMap();
 
 
 
-        // Get the path from the API...
-        // https://lgorithmbd.com/php_rest_app/api/shortpath/read.php
-
-        //Get the information of that path and draw map...
     }
 
 
@@ -83,38 +135,58 @@ public class PathMap extends AppCompatActivity {
             //No Path..
         }
         else{
-            String[] nodesNames = Path.split(" -> ");
+            String[] nodesNames = Path.split("->");
 
             String nodeInfo="",edgeInfo="";
-            String prev_name="",prev_valX="",prev_valY="";
+            String prev_tempCoordinate="";
+            float prev_floor=-1;
             int track=0;
             for(String name: nodesNames){
-                String values = coordinateValue.get(name);
-                //campus main_0_0_1___reception_0_10_1___
-                //campus main_0_0_1_reception_0_10_1_10@reception
-                String[] value = values.split("_");
-                if(nodeInfo.isEmpty()){
-                    nodeInfo+=name+"_"+value[0]+"_"+value[1]+"_"+"1";
+
+                String tempCoordinate = sp.getString(name,"");
+                String[] tempCoordinates = tempCoordinate.split("_");
+                float tempX = Float.parseFloat(tempCoordinates[0])*100*-1;
+                float tempY = Float.parseFloat(tempCoordinates[1])*100;
+                float tempZ = Float.parseFloat(tempCoordinates[2])*100;
+                if(prev_floor!=-1 && tempZ!=prev_floor){
+                    System.out.println(nodeInfo);
+                    System.out.println(edgeInfo);
+                    nodeList.add(nodeInfo);
+                    edgeList.add(edgeInfo);
+                    track=0;
+                    nodeInfo="";
+                    edgeInfo="";
                 }
-                else{
-                    nodeInfo+= "___"+name+"_"+value[0]+"_"+value[1]+"_"+"1";
+                tempCoordinate = tempX+"_"+tempY+"_"+tempZ;
+                if(!tempCoordinate.isEmpty()){
+                    if(nodeInfo.isEmpty()) nodeInfo+=name+"_"+tempCoordinate;
+                    else nodeInfo+="___"+name+"_"+tempCoordinate;
                 }
                 if(track>0){
-                    if(edgeInfo.isEmpty()){
-                        edgeInfo+= prev_name+"_"+prev_valX+"_"+prev_valY+"_"+"1"+"_"+name+"_"+value[0]+"_"+value[1]+"_"+"1_10";
-                    }
-                    else{
-                        edgeInfo+= "@"+prev_name+"_"+prev_valX+"_"+prev_valY+"_"+"1"+"_"+name+"_"+value[0]+"_"+value[1]+"_"+"1_10";
-                    }
+                    if(edgeInfo.isEmpty()) edgeInfo+= name+"_"+tempCoordinate+"_"+prev_tempCoordinate;
+                    else edgeInfo+= "___"+name+"_"+tempCoordinate+"_"+prev_tempCoordinate;
                 }
                 track++;
-                prev_name = name;
-                prev_valX = value[0];
-                prev_valY = value[1];
+                prev_tempCoordinate = name+"_"+tempCoordinate;
+                prev_floor=tempZ;
+
             }
-            System.out.println(nodeInfo);
-            System.out.println(edgeInfo);
-            //myCanvas.setNodeData(nodeInfo,edgeInfo);
+            if(!nodeInfo.isEmpty()) nodeList.add(nodeInfo);
+            if(!edgeInfo.isEmpty()) edgeList.add(edgeInfo);
+            for(String nodes:nodeList){
+                System.out.println(nodes);
+            }
+            for(String nodes:edgeList){
+                System.out.println(nodes);
+            }
+            if(nodeList.size()>0 || edgeList.size()>0){
+                nodeInfo = nodeList.get(0);
+                if(edgeList.size()>0) edgeInfo=edgeList.get(0);
+                else edgeInfo="";
+                floor_index=0;
+                myCanvas.setNodeData(nodeInfo,edgeInfo);
+            }
+            myCanvas.setNodeData(nodeInfo,edgeInfo);
         }
 
     }
@@ -126,7 +198,7 @@ public class PathMap extends AppCompatActivity {
 
 
 
-    private class FetchNodeDataTask extends AsyncTask<Void, Void, String> {
+    private class FetchShortestPathDataTask extends AsyncTask<Void, Void, String> {
         private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/shortpath/read.php";
 
         @Override
@@ -190,21 +262,22 @@ public class PathMap extends AppCompatActivity {
                     // Iterate over the JSON array and add nodes to the nodeList
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject nodeObject = data.getJSONObject(i);
-                        String id = nodeObject.getString("id");
-                        String sourceNodename = nodeObject.getString("from_node");
-                        String destinationNodename = nodeObject.getString("to_node");
-                        //System.out.println( nodeObject.getString("path"));
-                        if((sourceNodename.equals(sourceNode) && destinationNodename.equals(destinationNode)) ||((sourceNodename.equals(destinationNode) && destinationNodename.equals(sourceNode)) )){
-                            Path = nodeObject.getString("path");
-                            System.out.println(Path);
+                        String nodeName1 = nodeObject.getString("from_node");
+                        String nodeName2 = nodeObject.getString("to_node");
+                        String tempPath   = nodeObject.getString("path");
+                        String distance = nodeObject.getString("distance");
+                        //System.out.println(tempPath);
+                        if(nodeName1.equals(sourceNode) && nodeName2.equals(destinationNode) && !distance.equals("INF")){
+                            Path = tempPath;
                         }
+                        //if(nodeName1.equals("campus")) continue;
+//                        if(nodeName1.equals("lift 004A") || nodeName2.equals("lift 004A") || nodeName1.equals("lift 005F") || nodeName2.equals("lift 005F")){
+//                            System.out.println(nodeName1+" -> "+nodeName2+" = "+nodeDistance);
+//                        }
+
                     }
 
-                    isCompleted1=true;
-                    if(isCompleted1 && isCompleted2){
-                        designMap();
-                    }
-
+                    if(!Path.isEmpty()) designMap();
 
 
                 } catch (JSONException e) {
@@ -283,14 +356,22 @@ public class PathMap extends AppCompatActivity {
                         String tempNodeName = nodeObject.getString("node_number");
                         String tempXAxis  = nodeObject.getString("node_x");
                         String tempYAxis = nodeObject.getString("node_y");
-                        coordinateValue.put(tempNodeName, tempXAxis+"_"+tempYAxis);
-                        System.out.println(tempNodeName);
-                    }
+                        String tempZAxis  = nodeObject.getString("node_z");
 
-                    isCompleted2=true;
-                    if(isCompleted1 && isCompleted2){
-                        designMap();
+                        //if(tempZAxis.equals("1")) System.out.println(tempNodeName);
+                        //System.out.println(isNodeExist);
+
+                        String temp = sp.getString(tempNodeName,"");
+                        if(temp.isEmpty()){
+                            //System.out.println("Previous Existed Node Not Found");
+                            spEditor.putString(tempNodeName,tempXAxis+"_"+tempYAxis+"_"+tempZAxis);
+                            spEditor.apply();
+                        }
+                        //System.out.println(tempNodeName);
                     }
+                    new PathMap.FetchShortestPathDataTask().execute();
+
+
 
 
                 } catch (JSONException e) {

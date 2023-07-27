@@ -30,5 +30,23 @@
         android:layout_marginBottom="13dp"
         android:layout_toStartOf="@id/btnZoomIn"
         android:text="Zoom Out" />
+    <Button
+        android:id="@+id/previous"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_height="32dp"
+
+        android:text="Previous" />
+
+    <Button
+        android:id="@+id/next"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_height="32dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:text="Next" />
 
 </RelativeLayout>

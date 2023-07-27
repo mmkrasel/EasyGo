@@ -181,7 +181,7 @@ public class DataCollection extends AppCompatActivity{
                         //System.out.println(isNodeExist);
                         if(isNodeExist.isEmpty()){
                             System.out.println("Previous Existed Node Not Found");
-                            spEditor.putString(current_nodeName,"Found");
+                            spEditor.putString(current_nodeName,details[0]+"_"+details[1]+"_"+details[2]);
                             spEditor.apply();
                             createNode(current_nodeName, details[0], details[1], details[2]);
                         }
@@ -293,6 +293,13 @@ public class DataCollection extends AppCompatActivity{
                     floorTextview.setText(Float.toString(previous_node_z));
                     dialog_nodeInfo.dismiss();
                     isFirstNodeCreated=true;
+                    String isNodeExist = sp.getString(previous_node_name,"");
+                    //System.out.println(isNodeExist);
+                    if(isNodeExist.isEmpty()){
+                        System.out.println("Previous Existed Node Not Found");
+                        spEditor.putString(current_nodeName,previous_node_x+"_"+previous_node_y+"_"+previous_node_z);
+                        spEditor.apply();
+                    }
                     createNode(previous_node_name,previous_node_x,previous_node_y,previous_node_z);
                 });
 
@@ -501,7 +508,7 @@ public class DataCollection extends AppCompatActivity{
                         isFirstNodeCreated = true;
                         String nodeExist = sp.getString(nodeNumber,"");
                         if(nodeExist.isEmpty()){
-                            spEditor.putString(nodeNumber,"Found");
+                            spEditor.putString(nodeNumber,nodeX+"_"+nodeY+"_"+nodeZ);
                             spEditor.apply();
                         }
                         NodeData nodeData = new NodeData(id, nodeNumber, nodeX, nodeY, nodeZ);
@@ -600,7 +607,7 @@ public class DataCollection extends AppCompatActivity{
                         String nodeExist = sp.getString(nodeNumber,"");
                         if(nodeExist.isEmpty()){
                             System.out.println(nodeNumber);
-                            spEditor.putString(nodeNumber,"found");
+                            spEditor.putString(nodeNumber,nodeX+"_"+nodeY+"_"+nodeZ);
                             spEditor.apply();
                         }
 

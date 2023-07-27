@@ -31,4 +31,24 @@
         android:layout_toStartOf="@id/btnZoomIn"
         android:text="Zoom Out" />
 
+    <Button
+        android:id="@+id/six"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_height="32dp"
+
+        android:text="6TH FLOOR" />
+
+    <Button
+        android:id="@+id/ground"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_height="32dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:text="1ST FLOOR" />
+
+
 </RelativeLayout>
