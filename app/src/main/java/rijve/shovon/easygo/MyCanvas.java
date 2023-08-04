@@ -29,8 +29,8 @@ public class MyCanvas extends View {
     private float zoomFactor = 1.0f;
     //    private float translateX = 0.0f;
 //    private float translateY = 0.0f;
-    private Paint paint;
-    private Paint linePaint;
+    private Paint paint,paint1,paint2,paint3,paint4;
+    private Paint linePaint,linePaint1,linePaint2,linePaint3,linePaint4;
     float nodeX;
     float nodeY;
     private float previousX;
@@ -75,19 +75,45 @@ public class MyCanvas extends View {
 
     private void init() {
 
-        paint = new Paint();
-        paint.setColor(Color.GREEN);
-        // paint.setStrokeWidth(10);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setStrokeWidth(40f);
+        paint4 = new Paint();
+        paint4.setColor(Color.GREEN);
+        paint4.setStyle(Paint.Style.FILL);
+        paint4.setStrokeWidth(40f);
 
-        linePaint = new Paint();
-        linePaint.setColor(Color.BLUE);
-        linePaint.setStrokeWidth(50f);
+        paint1 = new Paint();
+        paint1.setColor(Color.BLUE);
+        paint1.setStyle(Paint.Style.FILL);
+        paint1.setStrokeWidth(40f);
+
+        paint2 = new Paint();
+        paint2.setColor(Color.YELLOW);
+        paint2.setStyle(Paint.Style.FILL);
+        paint2.setStrokeWidth(40f);
+
+        paint3 = new Paint();
+        paint3.setColor(Color.GRAY);
+        paint3.setStyle(Paint.Style.FILL);
+        paint3.setStrokeWidth(40f);
+
+        linePaint4 = new Paint();
+        linePaint4.setColor(Color.BLUE);
+        linePaint4.setStrokeWidth(50f);
+
+        linePaint1 = new Paint();
+        linePaint1.setColor(Color.YELLOW);
+        linePaint1.setStrokeWidth(50f);
+
+        linePaint2 = new Paint();
+        linePaint2.setColor(Color.GREEN);
+        linePaint2.setStrokeWidth(50f);
+
+        linePaint3 = new Paint();
+        linePaint3.setColor(Color.RED);
+        linePaint3.setStrokeWidth(50f);
 
         textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
-        textPaint.setTextSize(60f);
+        textPaint.setTextSize(50f);
         textPaint.setTextAlign(Paint.Align.CENTER);
         scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
     }
@@ -117,6 +143,7 @@ public class MyCanvas extends View {
             float nodeY = Float.parseFloat(coordinates[2]);
             float nodeZ = Float.parseFloat(coordinates[3]);
 
+
             // Add the CircleCoordinates object to the ArrayList
             tempCircleCoordinateObject = new CircleCoordinates(nodeX, nodeY,nodeZ,nodeName);
             this.circleCoordinatesList.add(tempCircleCoordinateObject);
@@ -137,7 +164,7 @@ public class MyCanvas extends View {
             float nodeZ2 = Float.parseFloat(edgeDetails[7]);
 
 
-            this.lineCoordinatesList.add(new LineCoordinates(nodeX1, nodeY1,nodeX2, nodeY2));
+            this.lineCoordinatesList.add(new LineCoordinates(nodeX1, nodeY1,nodeZ1,nodeX2, nodeY2,nodeZ2));
             System.out.println(nodeName1+" -> "+nodeName2);
 
         }
@@ -187,6 +214,11 @@ public class MyCanvas extends View {
                 float startY =getHeight() - lineCoordinates.getStartY();
                 float endX = getWidth()-lineCoordinates.getEndX();
                 float endY = getHeight() -lineCoordinates.getEndY();
+
+                if(lineCoordinates.getStartZ()==1) linePaint = linePaint1;
+                else if(lineCoordinates.getStartZ()==2) linePaint = linePaint2;
+                else if(lineCoordinates.getStartZ()==5) linePaint = linePaint3;
+                else linePaint = linePaint4;
                 canvas.drawLine(startX, startY,endX, endY, linePaint);
             }
         }
@@ -196,7 +228,12 @@ public class MyCanvas extends View {
             for (CircleCoordinates circleCoordinates : circleCoordinatesList) {
                 nodeX = circleCoordinates.getX();
                 nodeY = circleCoordinates.getY();
+
                 String nodeName = circleCoordinates.getNodeName();
+                if(circleCoordinates.getZ()==1) paint = paint1;
+                else if(circleCoordinates.getZ()==2) paint = paint2;
+                else if(circleCoordinates.getZ()==5) paint = paint3;
+                else paint = paint4;
                 canvas.drawCircle(getWidth() - nodeX, getHeight() - nodeY, 30, paint);
                 float textHeight = textPaint.descent() - textPaint.ascent();
                 float textOffset = (textHeight / 2) - textPaint.descent();

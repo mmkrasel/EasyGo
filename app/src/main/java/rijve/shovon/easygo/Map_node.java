@@ -29,7 +29,7 @@ import java.util.HashMap;
 public class Map_node extends AppCompatActivity {
     private MyCanvas myCanvas;
     private Button btnZoomIn;
-    private Button btnZoomOut,btnSixFloor,btnGroundFloor;
+    private Button btnZoomOut,btnSixFloor,btnGroundFloor,btnFiveFloor,btnSecondFloor;
     private boolean isDataCollectionCompleted=false;
     private RequestQueue requestQueue;
     public double setFloor =6.0;
@@ -47,6 +47,8 @@ public class Map_node extends AppCompatActivity {
         btnZoomIn = findViewById(R.id.btnZoomIn);
         btnZoomOut = findViewById(R.id.btnZoomOut);
         myCanvas = findViewById(R.id.myCanvas);
+        btnFiveFloor = findViewById(R.id.five);
+        btnSecondFloor = findViewById(R.id.two);
 
 
 
@@ -54,6 +56,22 @@ public class Map_node extends AppCompatActivity {
         btnGroundFloor.setOnClickListener(v -> {
             myCanvas.clearCanvas();
             setFloor=1.0;
+            selectedNodesHashMap.clear();
+            nodedatastring="";
+            edgeDataString="";
+            new FetchNodeDataTask().execute();
+        });
+        btnSecondFloor.setOnClickListener(v -> {
+            myCanvas.clearCanvas();
+            setFloor=2.0;
+            selectedNodesHashMap.clear();
+            nodedatastring="";
+            edgeDataString="";
+            new FetchNodeDataTask().execute();
+        });
+        btnFiveFloor.setOnClickListener(v -> {
+            myCanvas.clearCanvas();
+            setFloor=5.0;
             selectedNodesHashMap.clear();
             nodedatastring="";
             edgeDataString="";
@@ -263,9 +281,9 @@ public class Map_node extends AppCompatActivity {
                         String nodeName = nodeObject.getString("node_number");
                         double nodeX = nodeObject.getDouble("node_x")*50*-1;
                         double nodeY = nodeObject.getDouble("node_y")*50;
-                        double nodeZ = nodeObject.getDouble("node_z")*50;
+                        double nodeZ = nodeObject.getDouble("node_z");
 
-                        if(nodeZ==setFloor*50){
+                        if(nodeZ==setFloor){
                             //System.out.println(nodeName);
                             if(nodedatastring.isEmpty()){
                                 nodedatastring += nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -120,8 +121,8 @@ public class PathMap extends AppCompatActivity {
 
         //new PathMap.FetchShortestPathDataTask().execute();
         new PathMap.FetchNodeDataTaskCoordinates().execute();
-
-        System.out.println(Path);
+        //new PathMap.FetchShortestPathDataTaskTest().execute();
+        //System.out.println(Path);
         //designMap();
 
 
@@ -145,12 +146,14 @@ public class PathMap extends AppCompatActivity {
 
                 String tempCoordinate = sp.getString(name,"");
                 String[] tempCoordinates = tempCoordinate.split("_");
+                //System.out.println(name);
+                //if(tempCoordinate.isEmpty()) System.out.println(name+" FOund");
                 float tempX = Float.parseFloat(tempCoordinates[0])*100*-1;
                 float tempY = Float.parseFloat(tempCoordinates[1])*100;
-                float tempZ = Float.parseFloat(tempCoordinates[2])*100;
+                float tempZ = Float.parseFloat(tempCoordinates[2]);
                 if(prev_floor!=-1 && tempZ!=prev_floor){
-                    System.out.println(nodeInfo);
-                    System.out.println(edgeInfo);
+                    //System.out.println(nodeInfo);
+                    //System.out.println(edgeInfo);
                     nodeList.add(nodeInfo);
                     edgeList.add(edgeInfo);
                     track=0;
@@ -174,10 +177,10 @@ public class PathMap extends AppCompatActivity {
             if(!nodeInfo.isEmpty()) nodeList.add(nodeInfo);
             if(!edgeInfo.isEmpty()) edgeList.add(edgeInfo);
             for(String nodes:nodeList){
-                System.out.println(nodes);
+                //System.out.println(nodes);
             }
             for(String nodes:edgeList){
-                System.out.println(nodes);
+                //System.out.println(nodes);
             }
             if(nodeList.size()>0 || edgeList.size()>0){
                 nodeInfo = nodeList.get(0);
@@ -266,9 +269,11 @@ public class PathMap extends AppCompatActivity {
                         String nodeName2 = nodeObject.getString("to_node");
                         String tempPath   = nodeObject.getString("path");
                         String distance = nodeObject.getString("distance");
-                        //System.out.println(tempPath);
-                        if(nodeName1.equals(sourceNode) && nodeName2.equals(destinationNode) && !distance.equals("INF")){
+                        //System.out.println(nodeName1+"->"+nodeName2);
+                        if(nodeName1.equals(sourceNode) && nodeName2.equals(destinationNode) && !distance.equals("-1")){
                             Path = tempPath;
+                            //System.out.println(Path);
+                            break;
                         }
                         //if(nodeName1.equals("campus")) continue;
 //                        if(nodeName1.equals("lift 004A") || nodeName2.equals("lift 004A") || nodeName1.equals("lift 005F") || nodeName2.equals("lift 005F")){
@@ -369,7 +374,7 @@ public class PathMap extends AppCompatActivity {
                         }
                         //System.out.println(tempNodeName);
                     }
-                    new PathMap.FetchShortestPathDataTask().execute();
+                    new PathMap.FetchShortestPathDataTaskTest().execute();
 
 
 
@@ -382,7 +387,97 @@ public class PathMap extends AppCompatActivity {
             }
         }
     }
+    private class FetchShortestPathDataTaskTest extends AsyncTask<Void, Void, String> {
+        private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/shortpath/read_single.php";
 
+        @Override
+        protected String doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String result = null;
+
+            try {
+                // Create the URL object with the 'from_node' and 'to_node' parameters
+                //String tempSourceNode = sourceNode; // Replace with the actual source node
+                //String tempDestinationNode = destinationNode; // Replace with the actual destination node
+                URL url = new URL(API_URL + "?from_node=" + URLEncoder.encode(sourceNode, "UTF-8")
+                        + "&to_node=" + URLEncoder.encode(destinationNode, "UTF-8"));
+
+                // Create the HTTP connection
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                // Connect to the API
+                urlConnection.connect();
+
+                // Read the response
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuilder builder = new StringBuilder();
+
+                if (inputStream != null) {
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        builder.append(line);
+                    }
+
+                    result = builder.toString();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                // Close the connections and readers
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    // Parse the JSON response
+                    JSONObject response = new JSONObject(result);
+
+                    // Check if 'from_node' and 'to_node' are provided in the response
+                    if (response.has("from_node") && response.has("to_node")) {
+                        String nodeName1 = response.getString("from_node");
+                        String nodeName2 = response.getString("to_node");
+                        String tempPath = response.getString("path");
+                        String distance = response.getString("distance");
+
+                        // Check if the data is valid and not 'INF'
+                        System.out.println("FOUND: "+tempPath);
+                        Toast.makeText(PathMap.this, tempPath, Toast.LENGTH_SHORT).show();
+                        if(!tempPath.isEmpty()) {
+                            Path = tempPath;
+                            designMap();
+                        }
+                    } else {
+                        // 'from_node' or 'to_node' is missing in the response
+                        Toast.makeText(PathMap.this, "Invalid API response.", Toast.LENGTH_SHORT).show();
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Toast.makeText(PathMap.this, "Error parsing API response.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(PathMap.this, "Failed to fetch node data", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 
 
 }

@@ -40,6 +40,15 @@
         android:layout_height="32dp"
 
         android:text="6TH FLOOR" />
+    <Button
+        android:id="@+id/five"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_below="@+id/six"
+        android:layout_alignParentLeft="true"
+        android:layout_height="32dp"
+
+        android:text="5TH FLOOR" />
 
     <Button
         android:id="@+id/ground"
@@ -49,6 +58,14 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
         android:text="1ST FLOOR" />
+    <Button
+        android:id="@+id/two"
+        android:layout_width="100dp"
+        android:textSize="10dp"
+        android:layout_height="32dp"
+        android:layout_below="@+id/ground"
+        android:layout_alignParentRight="true"
+        android:text="2nd FLOOR" />
 
 
 </RelativeLayout>
