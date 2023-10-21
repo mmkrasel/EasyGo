@@ -47,10 +47,4 @@ public class GyroscopeInfo {
             }
             return  (float) Math.sqrt(sum);
         }
-
-
-
-
-
-
 }

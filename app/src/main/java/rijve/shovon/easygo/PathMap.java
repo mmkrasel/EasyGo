@@ -2,7 +2,10 @@ package rijve.shovon.easygo;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -26,19 +29,38 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 public class PathMap extends AppCompatActivity {
+    private Button markButton,btnStart,btnStop;
+
+    private float xAxis=0,yAxis=0,zAxis=0;
+
+    private AccelerometerInfo accelerometerInfo;
+    private MagnetometerInfo magnetometerInfo;
+    private GyroscopeInfo gyroscopeInfo;
+    private long previousWalkedTime = System.currentTimeMillis();
+    private static long minimum_step_per_second = 400;
+    private Intent ServiceIntent;
+    private float[] gyroscopeValues = new float[3];
+    private float[] magnetometerValues= new float[3];
+    private float[] accelerometerValues = new float[3];
+    private SensorService sensorService;
+    private boolean isReceiverRegistered = false;
+    private MyBroadcastReceiver accelerometer_receiver , gyroscope_receiver,magnetometer_receiver;
     private String sourceNode,destinationNode;
     private MyCanvas myCanvas;
+    private CanvasView loc;
     boolean isCompleted1=false,isCompleted2=false;
     private Button btnZoomIn;
-    private Button btnZoomOut,nextBtn,previousBtn;
+    private Button btnZoomOut,nextBtn,previousBtn,btnIncrease;
     private RequestQueue requestQueue;
     private HashMap<String, String> coordinateValue = new HashMap<>();
     private String Path="";
     private ArrayList<String> nodeList = new ArrayList<>();
     private ArrayList<String> edgeList = new ArrayList<>();
     private int floor_index=0;
+    private float a=0,b=0;
     SharedPreferences sp;
     SharedPreferences.Editor spEditor;
 
@@ -51,11 +73,17 @@ public class PathMap extends AppCompatActivity {
         destinationNode = intent.getStringExtra("destinationNode");
 
 
+
+
+
         btnZoomIn = findViewById(R.id.btnZoomIn);
         btnZoomOut = findViewById(R.id.btnZoomOut);
         myCanvas = findViewById(R.id.myCanvas);
+        //loc = findViewById(R.id.locCanvas);
         nextBtn = findViewById(R.id.next);
         previousBtn = findViewById(R.id.previous);
+        btnIncrease = findViewById(R.id.increase);
+
 
         sp = getSharedPreferences("nodeInfo",MODE_PRIVATE);
         spEditor = sp.edit();
@@ -121,12 +149,31 @@ public class PathMap extends AppCompatActivity {
 
         //new PathMap.FetchShortestPathDataTask().execute();
         new PathMap.FetchNodeDataTaskCoordinates().execute();
+
+
         //new PathMap.FetchShortestPathDataTaskTest().execute();
         //System.out.println(Path);
         //designMap();
 
 
+//        btnIncrease.setOnClickListener(v -> {
+//            myCanvas.setCoordinates(a*100*(-1), b*100);
+//            a++;
+//            b++;
+//        });
 
+
+    }
+
+    private void startTracking(){
+
+        sensorService = new SensorService();
+        accelerometerInfo = new AccelerometerInfo(3);
+        magnetometerInfo = new MagnetometerInfo(20);
+        gyroscopeInfo = new GyroscopeInfo(3);
+        registerSensorReceiver();
+        ServiceIntent = new Intent(this, SensorService.class);
+        startService(ServiceIntent);
     }
 
 
@@ -137,7 +184,6 @@ public class PathMap extends AppCompatActivity {
         }
         else{
             String[] nodesNames = Path.split("->");
-
             String nodeInfo="",edgeInfo="";
             String prev_tempCoordinate="";
             float prev_floor=-1;
@@ -145,9 +191,11 @@ public class PathMap extends AppCompatActivity {
             for(String name: nodesNames){
 
                 String tempCoordinate = sp.getString(name,"");
+                System.out.println(tempCoordinate);
                 String[] tempCoordinates = tempCoordinate.split("_");
                 //System.out.println(name);
                 //if(tempCoordinate.isEmpty()) System.out.println(name+" FOund");
+
                 float tempX = Float.parseFloat(tempCoordinates[0])*100*-1;
                 float tempY = Float.parseFloat(tempCoordinates[1])*100;
                 float tempZ = Float.parseFloat(tempCoordinates[2]);
@@ -191,12 +239,154 @@ public class PathMap extends AppCompatActivity {
             }
             myCanvas.setNodeData(nodeInfo,edgeInfo);
         }
+        String tempCoordinate = sp.getString(sourceNode,"");
+        System.out.println(tempCoordinate);
+        String[] tempCoordinates = tempCoordinate.split("_");
+        xAxis = Float.parseFloat(tempCoordinates[0]);
+        yAxis=Float.parseFloat(tempCoordinates[1]);
+        zAxis = Float.parseFloat(tempCoordinates[2]);
+        myCanvas.setCoordinates(xAxis*100*(-1),yAxis*100);
+        startTracking();
 
     }
 
+    protected void onPause() {
+        super.onPause();
+        if(isReceiverRegistered){
+            unregisterReceiver(accelerometer_receiver);
+            unregisterReceiver(magnetometer_receiver);
+            unregisterReceiver(gyroscope_receiver);
+            stopService(ServiceIntent);
+        }
+        isReceiverRegistered=false;
+    }
+
+    public boolean hasWalked(){
+        float accelerometerMagnitude = accelerometerInfo.getMagnitude();
+        float  gyroscopeMagnitude = gyroscopeInfo.getMagnitude();
+        long currentTime = System.currentTimeMillis();
+        //System.out.println(accelerometerMagnitude+"    "+gyroscopeMagnitude);
+        if(accelerometerMagnitude>=.8f && gyroscopeMagnitude<1f && (currentTime-previousWalkedTime)>minimum_step_per_second){
+            previousWalkedTime = currentTime;
+            return true;
+        }
+        return false;
+    }
+
+    private void calcCoordinate() {
+        float x=0,y=0,z=zAxis;
+        float theta=0;
+        float walkingDistance = .70f;
+        float direction = magnetometerInfo.getCurrentDegree();
+        if(direction>0 && direction<90){
+            theta = 90-direction;
+            x = ((float)Math.cos(Math.toRadians((double)theta))*walkingDistance)+xAxis;
+            y = ((float)Math.sin(Math.toRadians((double)theta))*walkingDistance)+yAxis;
+        }
+        else if(direction>90 && direction<180){
+            theta = 180-direction;
+            x = ((float)Math.sin(Math.toRadians((double)theta))*walkingDistance)+xAxis;
+            y = yAxis- ((float)Math.cos(Math.toRadians((double)theta))*walkingDistance);
+        }
+        else if(direction>180 && direction<270){
+            theta = 270-direction;
+            x = xAxis-((float)Math.cos(Math.toRadians((double)theta))*walkingDistance);
+            y = yAxis- ((float)Math.sin(Math.toRadians((double)theta))*walkingDistance);
+        }
+        else if(direction>270 && direction<360){
+            theta  = 360-direction;
+            x = xAxis- ((float)Math.sin(Math.toRadians((double)theta))*walkingDistance);
+            y = yAxis+ ((float)Math.cos(Math.toRadians((double)theta))*walkingDistance);
+        }
+        else if(direction==0){
+            x = xAxis;
+            y = yAxis+walkingDistance;
+        }
+        else if(direction==90){
+            x = xAxis+walkingDistance;
+            y = yAxis;
+        }
+        else if(direction==180){
+            x = xAxis;
+            y = yAxis-walkingDistance;
+        }
+        else if(direction==270){
+            x = xAxis-walkingDistance;
+            y = yAxis;
+        }
+        xAxis = x;
+        yAxis =y;
+        zAxis = z;
+        System.out.println(x+"   "+y);
+        System.out.println(direction);
+        myCanvas.setCoordinates(xAxis*100*(-1), yAxis*100);
+    }
+    private void processAccelerometerData(float[] val){
+        //send for calculation..
+
+        accelerometerValues = val.clone();
+        accelerometerInfo.setAccelerometerValues(accelerometerValues);
+        //System.out.println("ACC: "+ accelerometerInfo.getMagnitude());
+        if(hasWalked() && !magnetometerInfo.isDirectionChanging()){
+            //calculate and update the coordinate..
+            //System.out.println("OK");
+            calcCoordinate();
+        }
+        //else System.out.println("Not OK");
+        //calculate.hasWalked(accelerometerInfo.getMagnitude(),gyroscopeInfo.getMagnitude());
+        //distanceShow.setText(String.valueOf(calculate.getWalkingDistance()));
 
 
+    }
+    private void processMagnetometerData(float[] val){
+        magnetometerValues = val.clone();
+        magnetometerInfo.setMagnetometerLiveTracking(magnetometerValues,accelerometerValues);
+        //System.out.println("MAG: "+ magnetometerInfo.getDirection());
+//        if(!calculate.isDirectionOk(magnetometerInfo.isDirectionOk(),gyroscopeInfo.getMagnitude())){
+//            //@Give warning of change of direction and restart again....
+//            Toast.makeText(DataCollection.this, "DO NOT CHANGE DIRECTION... Start Again!!!", Toast.LENGTH_SHORT).show();
+//        }
+    }
+    private void processGyroscopeData(float[] val){
+        gyroscopeValues = val.clone();
+        gyroscopeInfo.setGyroscope_value(gyroscopeValues);
+        //System.out.println("GYR: "+ gyroscopeInfo.getMagnitude());
+    }
+    private void registerSensorReceiver(){
+        isReceiverRegistered=true;
+        accelerometer_receiver = new MyBroadcastReceiver();
+        IntentFilter accelerometer_receiver_filter = new IntentFilter(SensorService.ACTION_ACCELEROMETER_DATA);
+        registerReceiver(accelerometer_receiver, accelerometer_receiver_filter);
+        magnetometer_receiver = new MyBroadcastReceiver();
+        IntentFilter magnetometer_receiver_filter = new IntentFilter(SensorService.ACTION_MAGNETOMETER_DATA);
+        registerReceiver(accelerometer_receiver, magnetometer_receiver_filter);
+        gyroscope_receiver = new MyBroadcastReceiver();
+        IntentFilter gyroscope_receiver_filter = new IntentFilter(SensorService.ACTION_GYROSCOPE_DATA);
+        registerReceiver(gyroscope_receiver,gyroscope_receiver_filter);
+    }
+    public class MyBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(SensorService.ACTION_ACCELEROMETER_DATA)) {
+                float[] floatArray = intent.getFloatArrayExtra(SensorService.EXTRA_ACCELEROMETER_DATA);
+                processAccelerometerData(floatArray);
+                //System.out.println(floatArray[0]+" acc ");
+            }
 
+            else if (intent.getAction().equals(SensorService.ACTION_MAGNETOMETER_DATA)) {
+                float[] floatArray = intent.getFloatArrayExtra(SensorService.EXTRA_MAGNETOMETER_DATA);
+                processMagnetometerData(floatArray);
+                //System.out.println(floatArray[0]+" MAG ");
+            }
+
+            else if (intent.getAction().equals(SensorService.ACTION_GYROSCOPE_DATA)) {
+                float[] floatArray = intent.getFloatArrayExtra(SensorService.EXTRA_GYROSCOPE_DATA);
+                processGyroscopeData(floatArray);
+                //System.out.println(floatArray[0]+" GYR ");
+            }
+
+        }
+    }
 
 
 

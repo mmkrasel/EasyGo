@@ -1,13 +1,18 @@
 package rijve.shovon.easygo;
 
+
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Pair;
+import android.view.GestureDetector;
 import android.view.View;
 
 import org.json.JSONArray;
@@ -19,6 +24,8 @@ import java.util.HashMap;
 
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+
+import androidx.core.view.GestureDetectorCompat;
 
 public class MyCanvas extends View {
     private Bitmap backgroundImage;
@@ -33,15 +40,23 @@ public class MyCanvas extends View {
     private Paint linePaint,linePaint1,linePaint2,linePaint3,linePaint4;
     float nodeX;
     float nodeY;
+    float xCoordinate=0,yCoordinate=0;
     private float previousX;
     private int backgroundColor = Color.CYAN;
     private float previousY;
-    private float translateX;
-    private float translateY;
-    private Paint textPaint;
+    private float translateX=0;
+    private float translateY=0;
+    private Paint textPaint,centerDotPaint,borderDotPaint;
     private ScaleGestureDetector scaleGestureDetector;
     private float scaleFactor = 1.0f;
     private Path roadPath;
+    private GestureDetectorCompat mGestureDetector;
+    private ScaleGestureDetector mScaleGestureDetector;
+
+    private float rotationDegrees = 0;
+    private float mScaleFactor = 1.0f;
+
+    private boolean mapChange=false,locChange=false;
 
 
     private ArrayList<CircleCoordinates> circleCoordinatesList = new ArrayList<>();
@@ -76,9 +91,18 @@ public class MyCanvas extends View {
     private void init() {
 
         paint4 = new Paint();
-        paint4.setColor(Color.GREEN);
+        paint4.setColor(Color.WHITE);
         paint4.setStyle(Paint.Style.FILL);
         paint4.setStrokeWidth(40f);
+
+        centerDotPaint = new Paint();
+        centerDotPaint.setColor(Color.BLUE);
+        centerDotPaint.setStyle(Paint.Style.FILL);
+
+        borderDotPaint = new Paint();
+        borderDotPaint.setColor(Color.BLUE);
+        borderDotPaint.setStyle(Paint.Style.FILL);
+        borderDotPaint.setAlpha(50);
 
         paint1 = new Paint();
         paint1.setColor(Color.BLUE);
@@ -96,8 +120,11 @@ public class MyCanvas extends View {
         paint3.setStrokeWidth(40f);
 
         linePaint4 = new Paint();
+
         linePaint4.setColor(Color.BLUE);
-        linePaint4.setStrokeWidth(50f);
+        linePaint4.setStrokeWidth(150f);
+
+        // Set the border line width
 
         linePaint1 = new Paint();
         linePaint1.setColor(Color.YELLOW);
@@ -115,7 +142,26 @@ public class MyCanvas extends View {
         textPaint.setColor(Color.BLACK);
         textPaint.setTextSize(50f);
         textPaint.setTextAlign(Paint.Align.CENTER);
-        scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
+        mGestureDetector = new GestureDetectorCompat(getContext(), new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                translateX -= distanceX / zoomFactor;
+                translateY -= distanceY / zoomFactor;
+                invalidate();
+                return true;
+            }
+        });
+
+        mScaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                scaleFactor *= detector.getScaleFactor();
+                scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
+                invalidate();
+                return true;
+            }
+        });
+
     }
 
     public void setBackgroundImage(Bitmap bitmap) {
@@ -134,6 +180,7 @@ public class MyCanvas extends View {
         ArrayList<LineCoordinates> lineCoordinatesArrayList = new ArrayList<>();
         String[] nodeDataArray = nodeDataString.split("___");
         String[] edgeDataArray = nodeEdgeString.split("___");
+        mapChange=true;
 
         for (String nodeData : nodeDataArray) {
             String[] coordinates = nodeData.split("_");
@@ -174,11 +221,6 @@ public class MyCanvas extends View {
         invalidate();
     }
 
-    public Bitmap getBitmap() {
-        return backgroundImage;
-    }
-
-
     public void zoomIn() {
         zoomFactor += 0.1f; // Adjust the increment as per your preference
         invalidate();
@@ -189,7 +231,6 @@ public class MyCanvas extends View {
         invalidate();
     }
 
-    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
@@ -200,49 +241,124 @@ public class MyCanvas extends View {
         nodeX = canvas.getWidth() / 2f;
         nodeY = canvas.getHeight() / 2f;
         canvas.scale(scaleFactor, scaleFactor, nodeX, nodeY);
+
+
+
+
         // Draw the background image
         if (backgroundImage != null) {
             canvas.drawBitmap(backgroundImage, 0, 0, null);
         }
-        // nodeName1
-        // Draw circles based on CircleCoordinates
 
-        if(lineCoordinatesList!=null){
-            for(LineCoordinates lineCoordinates: lineCoordinatesList){
+        // Define a dash effect
+//        DashPathEffect dashPathEffect = new DashPathEffect(new float[]{5,5}, 0);
 
-                float startX = getWidth()-lineCoordinates.getStartX();
-                float startY =getHeight() - lineCoordinates.getStartY();
-                float endX = getWidth()-lineCoordinates.getEndX();
-                float endY = getHeight() -lineCoordinates.getEndY();
 
-                if(lineCoordinates.getStartZ()==1) linePaint = linePaint1;
-                else if(lineCoordinates.getStartZ()==2) linePaint = linePaint2;
-                else if(lineCoordinates.getStartZ()==5) linePaint = linePaint3;
-                else linePaint = linePaint4;
-                canvas.drawLine(startX, startY,endX, endY, linePaint);
+
+        // Draw lines based on LineCoordinates
+        //if(mapChange){
+            if (lineCoordinatesList != null) {
+                for (LineCoordinates lineCoordinates : lineCoordinatesList) {
+
+                    float startX = getWidth() - lineCoordinates.getStartX() * zoomFactor;
+                    float startY = getHeight() - lineCoordinates.getStartY() * zoomFactor;
+                    float endX = getWidth() - lineCoordinates.getEndX() * zoomFactor;
+                    float endY = getHeight() - lineCoordinates.getEndY() * zoomFactor;
+
+                    Paint linePaint;
+                    if (lineCoordinates.getStartZ() == 1) linePaint = linePaint1;
+                    else if (lineCoordinates.getStartZ() == 2) linePaint = linePaint2;
+                    else if (lineCoordinates.getStartZ() == 5) linePaint = linePaint3;
+                    else linePaint = linePaint4;
+
+                    Path path = new Path();
+                    path.moveTo(startX, startY);
+                    path.lineTo(endX, endY);
+
+                    String whiteColor = "#ffffff";
+                    int customColor = Color.parseColor(whiteColor);
+                    linePaint.setColor(customColor); // Set color for the path
+                    linePaint.setStrokeWidth(100f * zoomFactor);
+                    linePaint.setStyle(Paint.Style.STROKE);
+
+//                linePaint.setPathEffect(dashPathEffect);
+
+                    Paint borderPaint = new Paint();
+                    String grayColor = "#dadce0"; // #78909c
+                    int customGrayColor = Color.parseColor(grayColor);
+                    borderPaint.setColor(customGrayColor); // Set the border color
+                    borderPaint.setStrokeWidth(108f * zoomFactor);
+                    borderPaint.setStyle(Paint.Style.STROKE);
+                    canvas.drawPath(path, borderPaint);
+
+
+                    canvas.drawPath(path, linePaint);
+
+
+
+                    // Reset the path effect to draw subsequent lines normally
+                    linePaint.setPathEffect(null);
+                }
             }
-        }
 
-        //System.out.println(circleCoordinatesList.size());
-        if (circleCoordinatesList != null) {
-            for (CircleCoordinates circleCoordinates : circleCoordinatesList) {
-                nodeX = circleCoordinates.getX();
-                nodeY = circleCoordinates.getY();
+            // Draw decorative circles
 
-                String nodeName = circleCoordinates.getNodeName();
-                if(circleCoordinates.getZ()==1) paint = paint1;
-                else if(circleCoordinates.getZ()==2) paint = paint2;
-                else if(circleCoordinates.getZ()==5) paint = paint3;
-                else paint = paint4;
-                canvas.drawCircle(getWidth() - nodeX, getHeight() - nodeY, 30, paint);
-                float textHeight = textPaint.descent() - textPaint.ascent();
-                float textOffset = (textHeight / 2) - textPaint.descent();
-                //nodeX *= -1;
-                canvas.drawText(String.valueOf(nodeName), getWidth() - nodeX, (getHeight() - nodeY) - textOffset, textPaint);
+            // Draw circles based on CircleCoordinates
+            if (circleCoordinatesList != null) {
+                for (CircleCoordinates circleCoordinates : circleCoordinatesList) {
+//                nodeX = circleCoordinates.getX();
+//                nodeY = circleCoordinates.getY();
+
+                    // Adjust the coordinates based on the current zoom factor
+                    nodeX = circleCoordinates.getX() * zoomFactor;
+                    nodeY = circleCoordinates.getY() * zoomFactor;
+
+
+                    String nodeName = circleCoordinates.getNodeName();
+                    Paint circlePaint;
+                    if (circleCoordinates.getZ() == 1) circlePaint = paint1;
+                    else if (circleCoordinates.getZ() == 2) circlePaint = paint2;
+                    else if (circleCoordinates.getZ() == 5) circlePaint = paint3;
+                    else circlePaint = paint4;
+
+                    canvas.drawCircle(getWidth() - nodeX, getHeight() - nodeY, 50 * zoomFactor, circlePaint);
+
+                    float textHeight = textPaint.descent() - textPaint.ascent();
+                    float textOffset = (textHeight / 2) - textPaint.descent();
+
+
+                    String grayColor = "#78909c"; // #78909c
+                    int customGrayColor = Color.parseColor(grayColor);
+                    Typeface boldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD);
+                    textPaint.setTextSize(50f * zoomFactor);
+                    textPaint.setTypeface(boldTypeface);
+                    textPaint.setColor(customGrayColor);
+
+
+                    canvas.drawText(String.valueOf(nodeName), getWidth() - nodeX, (getHeight() - nodeY) - textOffset, textPaint);
+
+//                if (!"common".equals(nodeName)) {
+//                    // Draw a rectangle alongside the circle
+//                    float rectWidth = 300; // Adjust the width as needed
+//                    float rectHeight = 100; // Adjust the height as needed
+//                    float rectX = (getWidth() - nodeX) + 500; // Adjust the position as needed #f1f3f4
+//                    float rectY = (getHeight() - nodeY) - rectHeight / 2;
+//
+//                    Paint rectanglePaint = new Paint();
+//                    int racColor = Color.parseColor( "#f1f3f4");
+//                    rectanglePaint.setColor(racColor); // Adjust the rectangle color as needed
+//
+//                    canvas.drawRect(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectanglePaint);
+//                }
+                }
             }
-        }
-
-
+            mapChange=false;
+        //}
+        //if(locChange){
+            canvas.drawCircle(getWidth()-xCoordinate,getHeight()-yCoordinate,40,centerDotPaint);
+            canvas.drawCircle(getWidth()-xCoordinate,getHeight()-yCoordinate,100,borderDotPaint);
+            locChange=false;
+        //}
 
     }
 
@@ -269,38 +385,52 @@ public class MyCanvas extends View {
     }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        scaleGestureDetector.onTouchEvent(event);
+        mScaleGestureDetector.onTouchEvent(event);
 
-        float x = event.getX();
-        float y = event.getY();
+        int action = event.getActionMasked();
 
-        switch (event.getAction()) {
+        switch(action) {
             case MotionEvent.ACTION_DOWN:
-                previousX = x;
-                previousY = y;
+                previousX = event.getX();
+                previousY = event.getY();
                 break;
             case MotionEvent.ACTION_MOVE:
-                float dx = x - previousX;
-                float dy = y - previousY;
-                translateX += dx;
-                translateY += dy;
+                float dx = event.getX() - previousX;
+                float dy = event.getY() - previousY;
+                translateX += dx / mScaleFactor;
+                translateY += dy / mScaleFactor;
                 invalidate();
+                previousX = event.getX();
+                previousY = event.getY();
                 break;
-        }
 
-        previousX = x;
-        previousY = y;
+
+            case MotionEvent.ACTION_CANCEL:
+                 /*dx = event.getX() - previousX;
+                 dy = event.getY() - previousY;
+                translateX += dx / mScaleFactor;
+                translateY += dy / mScaleFactor;
+                invalidate();
+                previousX = event.getX();
+                previousY = event.getY();*/
+                dx = event.getX() - previousX;
+                dy = event.getY() - previousY;
+                translateX=dx / mScaleFactor;
+                translateY=dy / mScaleFactor;
+                break;
+
+        }
 
         return true;
     }
-    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
-        @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            scaleFactor *= detector.getScaleFactor();
-            // Limit the scale factor to a certain range (optional)
-            scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
-            return true;
-        }
+
+    public void setCoordinates(float x, float y) {
+        xCoordinate = x;
+        yCoordinate = y;
+        locChange=true;
+        invalidate(); // Redraw the canvas with the new dot
     }
+
+
 
 }

@@ -10,25 +10,40 @@
         android:layout_height="match_parent" />
 
     <Button
+        android:id="@+id/QRCode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_toStartOf="@+id/btnZoomOut"
+        android:text="QR" />
+
+    <Button
         android:id="@+id/btnZoomIn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Zoom In"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:layout_margin="16dp" />
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:text="Zoom In" />
 
     <Button
         android:id="@+id/btnZoomOut"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_margin="16dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="154dp"
-        android:layout_marginBottom="13dp"
-        android:layout_toStartOf="@id/btnZoomIn"
+        android:layout_marginEnd="19dp"
+        android:layout_marginBottom="11dp"
+        android:layout_toStartOf="@+id/btnZoomIn"
         android:text="Zoom Out" />
 
     <Button

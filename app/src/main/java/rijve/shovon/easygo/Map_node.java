@@ -1,5 +1,7 @@
 package rijve.shovon.easygo;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -7,11 +9,26 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
-
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.widget.Button;
+import android.Manifest;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+import com.journeyapps.barcodescanner.CaptureActivity;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,11 +45,13 @@ import java.util.HashMap;
 
 public class Map_node extends AppCompatActivity {
     private MyCanvas myCanvas;
-    private Button btnZoomIn;
+    private Button btnZoomIn,btnQRScan;
     private Button btnZoomOut,btnSixFloor,btnGroundFloor,btnFiveFloor,btnSecondFloor;
     private boolean isDataCollectionCompleted=false;
     private RequestQueue requestQueue;
     public double setFloor =6.0;
+
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 200;
     private String nodedatastring = "",edgeDataString="";
     private HashMap<String,String> selectedNodesHashMap = new HashMap<>();
 
@@ -49,6 +68,21 @@ public class Map_node extends AppCompatActivity {
         myCanvas = findViewById(R.id.myCanvas);
         btnFiveFloor = findViewById(R.id.five);
         btnSecondFloor = findViewById(R.id.two);
+        btnQRScan = findViewById(R.id.QRCode);
+
+
+        btnQRScan.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(Map_node.this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(Map_node.this, new String[]{Manifest.permission.CAMERA},
+                        CAMERA_PERMISSION_REQUEST_CODE);
+            } else {
+                ScanCode();
+            }
+        });
+
+
+
 
 
 
@@ -110,6 +144,27 @@ public class Map_node extends AppCompatActivity {
         // Fetch node data and create circles on canvas
 
     }
+
+
+    private void ScanCode() {
+        ScanOptions  options = new ScanOptions();
+        options.setPrompt("Volume up to flash on");
+        options.setBeepEnabled(true);
+        options.setOrientationLocked(false);
+        options.setCaptureActivity(CaptureActivity.class);
+        barLauncher.launch(options);
+    }
+
+    ActivityResultLauncher<ScanOptions> barLauncher = registerForActivityResult(new ScanContract(),result->{
+        if(result.getContents() != null)
+        {
+            String extractedText = result.getContents();
+            Toast.makeText(Map_node.this, "Text: " + extractedText, Toast.LENGTH_SHORT).show();
+        }
+        else{
+            Toast.makeText(Map_node.this, "Invalid QR", Toast.LENGTH_SHORT).show();
+        }
+    });
 
 
     private class FetchNodeEdgeDataTask extends AsyncTask<Void, Void, String> {
