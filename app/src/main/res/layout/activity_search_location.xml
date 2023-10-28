@@ -55,7 +55,7 @@
                 android:layout_marginLeft="200dp"
                 android:src="@drawable/ic_route"/>
 
-            <EditText android:id="@+id/sourceNodeName1"
+            <AutoCompleteTextView android:id="@+id/sourceNodeName1"
                 android:textColor="@color/text_color"
                 android:layout_marginLeft="10dp"
                 android:layout_marginTop="-4dp"
@@ -68,7 +68,7 @@
 
 
 
-            <EditText android:id="@+id/sourceNodeName2"
+            <AutoCompleteTextView android:id="@+id/sourceNodeName2"
                 android:textColor="@color/text_color"
                 android:layout_marginLeft="10dp"
                 android:textSize="12dp"
