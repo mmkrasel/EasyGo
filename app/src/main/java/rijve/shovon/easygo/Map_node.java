@@ -81,12 +81,6 @@ public class Map_node extends AppCompatActivity {
             }
         });
 
-
-
-
-
-
-
         btnGroundFloor.setOnClickListener(v -> {
             myCanvas.clearCanvas();
             setFloor=1.0;
@@ -167,7 +161,7 @@ public class Map_node extends AppCompatActivity {
     });
 
 
-    private class FetchNodeEdgeDataTask extends AsyncTask<Void, Void, String> {
+    class FetchNodeEdgeDataTask extends AsyncTask<Void, Void, String> {
         private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/edgeinfo/read.php";
 
         @Override
@@ -253,7 +247,7 @@ public class Map_node extends AppCompatActivity {
                     //need to remove it later
                     isDataCollectionCompleted=true;
 
-                    System.out.println(edgeDataString);
+                    System.out.println("Edge Data Fetch Successfully");
                     //String fakeData="campus main_0_0_1___reception_0_10_1___A_0_15_1___central lobby_0_20_1___B_0_30_1___Room102_0_50_1___Moshjid_0_60_1___C_0_65_1___Lift1_-5_65_1___Room103_-10_67_1___Room105_-15_67_1___toilet1_-20_67_1___Room107_-30_67_1___Room110_-40_67_1___Room104_-10_63_1___Room106_-15_63_1___Room108_-20_63_1___Room109_-30_63_1___Room111_-40_63_1___Stairs1_-10_15_1___Toilet2_-15_15_1___Auditorium_-40_15_1___FUB Entry_-50_15_1";
                     //String fakeDataEdge = "campus main_0_0_1_reception_0_10_1_10@reception_0_10_1_A_0_15_1_5@A_0_15_1_central lobby_0_20_1_5@A_0_15_1_Stairs1_-10_15_1_10@central lobby_0_20_1_B_0_30_1_10@B_0_30_1_Room102_0_50_1_20@Room102_0_50_1_Moshjid_0_60_1_10@Moshjid_0_60_1_C_0_65_1_5@C_0_65_1_Lift1_-5_65_1_5@Lift1_-5_65_1_Room103_-10_67_1_7@Lift1_-5_65_1_Room104_-10_63_1_7@Room103_-10_67_1_Room105_-15_67_1_5@Room105_-15_67_1_toilet1_-20_67_1_5@toilet1_-20_67_1_Room107_-30_67_1_10@Room107_-30_67_1_Room110_-40_67_1_10@Room104_-10_63_1_Room106_-15_63_1_5@Room106_-15_63_1_Room108_-20_63_1_5@Room108_-20_63_1_Room109_-30_63_1_10@Room109_-30_63_1_Room111_-40_63_1_10@Stairs1_-10_15_1_Toilet2_-15_15_1_5@Toilet2_-15_15_1_Auditorium_-40_15_1_25@Auditorium_-40_15_1_FUB Entry_-50_15_1_10";
                     myCanvas.setNodeData(nodedatastring,edgeDataString);

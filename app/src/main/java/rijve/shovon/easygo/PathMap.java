@@ -33,9 +33,11 @@ import java.util.concurrent.TimeUnit;
 
 public class PathMap extends AppCompatActivity {
     private Button markButton,btnStart,btnStop;
-
+    public double setFloor =1.0;
     private float xAxis=0,yAxis=0,zAxis=0;
-
+    private HashMap<String,String> selectedNodesHashMap = new HashMap<>();
+    private String nodedatastring = "",edgeDataString="";
+    private boolean isDataCollectionCompleted=false;
     private AccelerometerInfo accelerometerInfo;
     private MagnetometerInfo magnetometerInfo;
     private GyroscopeInfo gyroscopeInfo;
@@ -65,16 +67,13 @@ public class PathMap extends AppCompatActivity {
     SharedPreferences.Editor spEditor;
 
     @Override
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_path_map);
         Intent intent = getIntent();
         sourceNode = intent.getStringExtra("sourceNode");
         destinationNode = intent.getStringExtra("destinationNode");
-
-
-
-
 
         btnZoomIn = findViewById(R.id.btnZoomIn);
         btnZoomOut = findViewById(R.id.btnZoomOut);
@@ -103,7 +102,6 @@ public class PathMap extends AppCompatActivity {
         });
 
 
-
         nextBtn.setOnClickListener(v -> {
             String nodeInfo="",edgeInfo="";
             if(floor_index+1<nodeList.size() || floor_index+1<edgeList.size()){
@@ -116,7 +114,9 @@ public class PathMap extends AppCompatActivity {
                 floor_index++;
                 if(!nodeInfo.isEmpty() || !edgeInfo.isEmpty()){
                     myCanvas.clearCanvas();
-                    myCanvas.setNodeData(nodeInfo,edgeInfo);
+                    myCanvas.setPathNodeData(nodeInfo,edgeInfo);
+                    setFloor= floor_index;
+                    new FetchNodeDataTask().execute();
                     nodeInfo="";
                     edgeInfo="";
                 }
@@ -133,7 +133,9 @@ public class PathMap extends AppCompatActivity {
                 floor_index--;
                 if(!nodeInfo.isEmpty() || !edgeInfo.isEmpty()){
                     myCanvas.clearCanvas();
-                    myCanvas.setNodeData(nodeInfo,edgeInfo);
+                    myCanvas.setPathNodeData(nodeInfo,edgeInfo);
+                    setFloor= floor_index;
+                    new FetchNodeDataTask().execute();
                     nodeInfo="";
                     edgeInfo="";
                 }
@@ -148,6 +150,7 @@ public class PathMap extends AppCompatActivity {
         //Path = "campus main->reception->common 001A->central lobby->common 003A->room 102->common 004A->common 005A->lift 002A->stairs 003A->common 009A->room 113->room 114->room 115->stairs 005A->common 010A->toilet 003A->lecture gallery ->wifi zone->common 011A->lift 004A->lift 005F->CSE department->common 014F->room 647->room 648";
 
         //new PathMap.FetchShortestPathDataTask().execute();
+        new FetchNodeDataTask().execute();
         new PathMap.FetchNodeDataTaskCoordinates().execute();
 
 
@@ -235,9 +238,9 @@ public class PathMap extends AppCompatActivity {
                 if(edgeList.size()>0) edgeInfo=edgeList.get(0);
                 else edgeInfo="";
                 floor_index=0;
-                myCanvas.setNodeData(nodeInfo,edgeInfo);
+                myCanvas.setPathNodeData(nodeInfo,edgeInfo);
             }
-            myCanvas.setNodeData(nodeInfo,edgeInfo);
+            myCanvas.setPathNodeData(nodeInfo,edgeInfo);
         }
         String tempCoordinate = sp.getString(sourceNode,"");
         System.out.println(tempCoordinate);
@@ -474,6 +477,206 @@ public class PathMap extends AppCompatActivity {
 
                     if(!Path.isEmpty()) designMap();
 
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Toast.makeText(PathMap.this, "Failed to fetch node data", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private class FetchNodeEdgeDataTask extends AsyncTask<Void, Void, String> {
+        private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/edgeinfo/read.php";
+
+        @Override
+        protected String doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String result = null;
+
+            try {
+                // Create the URL object
+                URL url = new URL(API_URL);
+
+                // Create the HTTP connection
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                // Connect to the API
+                urlConnection.connect();
+
+                // Read the response
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuilder builder = new StringBuilder();
+
+                if (inputStream != null) {
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        builder.append(line);
+                    }
+
+                    result = builder.toString();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                // Close the connections and readers
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    // Parse the JSON response
+                    JSONObject response = new JSONObject(result);
+                    JSONArray data = response.getJSONArray("data");
+
+                    // Iterate over the JSON array and add nodes to the nodeList
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject nodeObject = data.getJSONObject(i);
+                        String nodeName1 = nodeObject.getString("node1");
+                        String nodeName2 = nodeObject.getString("node2");
+                        String nodeDistance   = nodeObject.getString("distance");
+                        //if(nodeName1.equals("campus")) continue;
+                        if(selectedNodesHashMap.containsKey(nodeName1) && selectedNodesHashMap.containsKey(nodeName2)){
+                            if(edgeDataString.isEmpty()){
+                                edgeDataString += selectedNodesHashMap.get(nodeName1)+"_"+selectedNodesHashMap.get(nodeName2);
+                                //edgeDataString += nodeName1+"_"+nodeName2 + "_" + nodeDistance;
+                            }
+                            else{
+                                edgeDataString += "___"+selectedNodesHashMap.get(nodeName1)+"_"+selectedNodesHashMap.get(nodeName2);
+                                //edgeDataString += "___"+nodeName1+"_"+nodeName2 + "_" + nodeDistance;
+                            }
+                        }
+
+                    }
+                    Toast.makeText(PathMap.this, "Data fetch data" + nodedatastring, Toast.LENGTH_SHORT).show();
+                    //System.out.println(edgeDataString);
+                    // Create circles on canvas using the node data
+                    //need to remove it later
+                    isDataCollectionCompleted=true;
+
+                    System.out.println("Edge Data Fetch Successfully");
+                    //String fakeData="campus main_0_0_1___reception_0_10_1___A_0_15_1___central lobby_0_20_1___B_0_30_1___Room102_0_50_1___Moshjid_0_60_1___C_0_65_1___Lift1_-5_65_1___Room103_-10_67_1___Room105_-15_67_1___toilet1_-20_67_1___Room107_-30_67_1___Room110_-40_67_1___Room104_-10_63_1___Room106_-15_63_1___Room108_-20_63_1___Room109_-30_63_1___Room111_-40_63_1___Stairs1_-10_15_1___Toilet2_-15_15_1___Auditorium_-40_15_1___FUB Entry_-50_15_1";
+                    //String fakeDataEdge = "campus main_0_0_1_reception_0_10_1_10@reception_0_10_1_A_0_15_1_5@A_0_15_1_central lobby_0_20_1_5@A_0_15_1_Stairs1_-10_15_1_10@central lobby_0_20_1_B_0_30_1_10@B_0_30_1_Room102_0_50_1_20@Room102_0_50_1_Moshjid_0_60_1_10@Moshjid_0_60_1_C_0_65_1_5@C_0_65_1_Lift1_-5_65_1_5@Lift1_-5_65_1_Room103_-10_67_1_7@Lift1_-5_65_1_Room104_-10_63_1_7@Room103_-10_67_1_Room105_-15_67_1_5@Room105_-15_67_1_toilet1_-20_67_1_5@toilet1_-20_67_1_Room107_-30_67_1_10@Room107_-30_67_1_Room110_-40_67_1_10@Room104_-10_63_1_Room106_-15_63_1_5@Room106_-15_63_1_Room108_-20_63_1_5@Room108_-20_63_1_Room109_-30_63_1_10@Room109_-30_63_1_Room111_-40_63_1_10@Stairs1_-10_15_1_Toilet2_-15_15_1_5@Toilet2_-15_15_1_Auditorium_-40_15_1_25@Auditorium_-40_15_1_FUB Entry_-50_15_1_10";
+                    myCanvas.setNodeData(nodedatastring,edgeDataString);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Toast.makeText(PathMap.this, "Failed to fetch node data", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private class FetchNodeDataTask extends AsyncTask<Void, Void, String> {
+        private static final String API_URL = "https://lgorithmbd.com/php_rest_app/api/nodeinfo/read.php";
+
+        @Override
+        protected String doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String result = null;
+
+            try {
+                // Create the URL object
+                URL url = new URL(API_URL);
+
+                // Create the HTTP connection
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                // Connect to the API
+                urlConnection.connect();
+
+                // Read the response
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuilder builder = new StringBuilder();
+
+                if (inputStream != null) {
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        builder.append(line);
+                    }
+
+                    result = builder.toString();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                // Close the connections and readers
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    // Parse the JSON response
+                    JSONObject response = new JSONObject(result);
+                    JSONArray data = response.getJSONArray("data");
+
+                    // Iterate over the JSON array and add nodes to the nodeList
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject nodeObject = data.getJSONObject(i);
+                        String id = nodeObject.getString("id");
+                        String nodeName = nodeObject.getString("node_number");
+                        double nodeX = nodeObject.getDouble("node_x")*50*-1;
+                        double nodeY = nodeObject.getDouble("node_y")*50;
+                        double nodeZ = nodeObject.getDouble("node_z");
+
+                        if(nodeZ==setFloor){
+                            //System.out.println(nodeName);
+                            if(nodedatastring.isEmpty()){
+                                nodedatastring += nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
+                            }
+                            else{
+                                nodedatastring += "___"+nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ;
+                            }
+                            selectedNodesHashMap.put(nodeName,nodeName+"_"+nodeX + "_" + nodeY + "_" + nodeZ);
+                        }
+
+                    }
+                    //Toast.makeText(Map_node.this, "Data fetch data" + nodedatastring, Toast.LENGTH_SHORT).show();
+                    System.out.println(nodedatastring);
+                    new PathMap.FetchNodeEdgeDataTask().execute();
+                    // Create circles on canvas using the node data
+                    //need to remove it later
+
+//                    String fakeData="campus main_0_0_1___reception_0_10_1___A_0_15_1___central lobby_0_20_1___B_0_30_1___Room102_0_50_1___Moshjid_0_60_1___C_0_65_1___Lift1_-5_65_1___Room103_-10_67_1___Room105_-15_67_1___toilet1_-20_67_1___Room107_-30_67_1___Room110_-40_67_1___Room104_-10_63_1___Room106_-15_63_1___Room108_-20_63_1___Room109_-30_63_1___Room111_-40_63_1___Stairs1_-10_15_1___Toilet2_-15_15_1___Auditorium_-40_15_1___FUB Entry_-50_15_1";
+//                    String fakeDataEdge = "campus main_0_0_1_reception_0_10_1_10@reception_0_10_1_A_0_15_1_5@A_0_15_1_central lobby_0_20_1_5@A_0_15_1_Stairs1_-10_15_1_10@central lobby_0_20_1_B_0_30_1_10@B_0_30_1_Room102_0_50_1_20@Room102_0_50_1_Moshjid_0_60_1_10@Moshjid_0_60_1_C_0_65_1_5@C_0_65_1_Lift1_-5_65_1_5@Lift1_-5_65_1_Room103_-10_67_1_7@Lift1_-5_65_1_Room104_-10_63_1_7@Room103_-10_67_1_Room105_-15_67_1_5@Room105_-15_67_1_toilet1_-20_67_1_5@toilet1_-20_67_1_Room107_-30_67_1_10@Room107_-30_67_1_Room110_-40_67_1_10@Room104_-10_63_1_Room106_-15_63_1_5@Room106_-15_63_1_Room108_-20_63_1_5@Room108_-20_63_1_Room109_-30_63_1_10@Room109_-30_63_1_Room111_-40_63_1_10@Stairs1_-10_15_1_Toilet2_-15_15_1_5@Toilet2_-15_15_1_Auditorium_-40_15_1_25@Auditorium_-40_15_1_FUB Entry_-50_15_1_10";
+//                    myCanvas.setNodeData(fakeData,fakeDataEdge);
 
                 } catch (JSONException e) {
                     e.printStackTrace();

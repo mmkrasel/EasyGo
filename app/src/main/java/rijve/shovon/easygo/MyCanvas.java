@@ -1,6 +1,6 @@
 package rijve.shovon.easygo;
 
-
+// campus main --> room 630
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -61,6 +61,8 @@ public class MyCanvas extends View {
 
     private ArrayList<CircleCoordinates> circleCoordinatesList = new ArrayList<>();
     private ArrayList<LineCoordinates> lineCoordinatesList = new ArrayList<>();
+
+    private ArrayList<PathLineCordinates> pathLineCordinatesList = new ArrayList<>();
 
     public MyCanvas(Context context) {
         super(context);
@@ -221,6 +223,52 @@ public class MyCanvas extends View {
         invalidate();
     }
 
+    public void setPathNodeData(String nodeDataString , String nodeEdgeString) {
+        ArrayList<CircleCoordinates> circleCoordinatesList = new ArrayList<>();
+        ArrayList<PathLineCordinates> pathLineCordinatesList = new ArrayList<>();
+        String[] nodeDataArray = nodeDataString.split("___");
+        String[] edgeDataArray = nodeEdgeString.split("___");
+        mapChange=true;
+
+        for (String nodeData : nodeDataArray) {
+            String[] coordinates = nodeData.split("_");
+
+            String nodeName = coordinates[0];
+            float nodeX = Float.parseFloat(coordinates[1]);
+            float nodeY = Float.parseFloat(coordinates[2]);
+            float nodeZ = Float.parseFloat(coordinates[3]);
+
+
+            // Add the CircleCoordinates object to the ArrayList
+            tempCircleCoordinateObject = new CircleCoordinates(nodeX, nodeY,nodeZ,nodeName);
+            this.circleCoordinatesList.add(tempCircleCoordinateObject);
+
+        }
+
+
+        for(String edgeInfo: edgeDataArray){
+            String[] edgeDetails = edgeInfo.split("_");
+
+            String nodeName1 = edgeDetails[0];
+            float nodeX1 = Float.parseFloat(edgeDetails[1]);
+            float nodeY1 =Float.parseFloat(edgeDetails[2]);
+            float nodeZ1 = Float.parseFloat(edgeDetails[3]);
+            String nodeName2 =edgeDetails[4];
+            float nodeX2 =Float.parseFloat(edgeDetails[5]);
+            float nodeY2 = Float.parseFloat(edgeDetails[6]);
+            float nodeZ2 = Float.parseFloat(edgeDetails[7]);
+
+
+            this.pathLineCordinatesList.add(new PathLineCordinates(nodeX1, nodeY1,nodeZ1,nodeX2, nodeY2,nodeZ2));
+            System.out.println(nodeName1+" -> "+nodeName2);
+
+        }
+
+        //this.lineCoordinatesList = lineCoordinatesArrayList;
+        //this.circleCoordinatesList = circleCoordinatesList;
+        invalidate();
+    }
+
     public void zoomIn() {
         zoomFactor += 0.1f; // Adjust the increment as per your preference
         invalidate();
@@ -281,7 +329,6 @@ public class MyCanvas extends View {
                     linePaint.setStrokeWidth(100f * zoomFactor);
                     linePaint.setStyle(Paint.Style.STROKE);
 
-//                linePaint.setPathEffect(dashPathEffect);
 
                     Paint borderPaint = new Paint();
                     String grayColor = "#dadce0"; // #78909c
@@ -300,6 +347,44 @@ public class MyCanvas extends View {
                     linePaint.setPathEffect(null);
                 }
             }
+        // For path line
+        if (pathLineCordinatesList != null) {
+            for (PathLineCordinates pathLineCordinates : pathLineCordinatesList) {
+
+                float startX = getWidth() - pathLineCordinates.getStartX() * zoomFactor;
+                float startY = getHeight() - pathLineCordinates.getStartY() * zoomFactor;
+                float endX = getWidth() - pathLineCordinates.getEndX() * zoomFactor;
+                float endY = getHeight() - pathLineCordinates.getEndY() * zoomFactor;
+
+                Paint linePaint;
+                linePaint = new Paint();
+                String pathColor = "";
+                if (pathLineCordinates.getStartZ() == 1) pathColor = "#54aeff";
+                else if (pathLineCordinates.getStartZ() == 2) pathColor = "#98e4ff";
+                else if (pathLineCordinates.getStartZ() == 3) pathColor = "#d0bfff";
+                else if (pathLineCordinates.getStartZ() == 4) pathColor = "#ffcf96";
+                else if (pathLineCordinates.getStartZ() == 5) pathColor = "#64ccc5";
+                else pathColor = "#8e8ffa";
+
+                Path path = new Path();
+                path.moveTo(startX, startY);
+                path.lineTo(endX, endY);
+
+
+                int customColor = Color.parseColor(pathColor);
+                linePaint.setColor(customColor); // Set color for the path
+                linePaint.setStrokeWidth(100f * zoomFactor);
+                linePaint.setStyle(Paint.Style.STROKE);
+
+
+                canvas.drawPath(path, linePaint);
+
+
+
+                // Reset the path effect to draw subsequent lines normally
+                linePaint.setPathEffect(null);
+            }
+        }
 
             // Draw decorative circles
 
@@ -337,19 +422,6 @@ public class MyCanvas extends View {
 
                     canvas.drawText(String.valueOf(nodeName), getWidth() - nodeX, (getHeight() - nodeY) - textOffset, textPaint);
 
-//                if (!"common".equals(nodeName)) {
-//                    // Draw a rectangle alongside the circle
-//                    float rectWidth = 300; // Adjust the width as needed
-//                    float rectHeight = 100; // Adjust the height as needed
-//                    float rectX = (getWidth() - nodeX) + 500; // Adjust the position as needed #f1f3f4
-//                    float rectY = (getHeight() - nodeY) - rectHeight / 2;
-//
-//                    Paint rectanglePaint = new Paint();
-//                    int racColor = Color.parseColor( "#f1f3f4");
-//                    rectanglePaint.setColor(racColor); // Adjust the rectangle color as needed
-//
-//                    canvas.drawRect(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectanglePaint);
-//                }
                 }
             }
             mapChange=false;
