@@ -116,17 +116,17 @@
                 android:layout_width="96dp"
                 android:layout_height="30dp" />
 
-            <TextView android:id="@+id/saveNewNodeBtn"
-                android:textStyle="bold"
-                android:layout_gravity="center_horizontal|center"
-                android:gravity="center"
-                android:textColor="@color/rectangle_1223_color"
-                android:layout_marginLeft="6dp"
-                android:layout_marginTop="1dp"
+            <TextView
+                android:id="@+id/saveNewNodeBtn"
                 android:layout_width="88.22dp"
                 android:layout_height="25dp"
+                android:layout_gravity="center_horizontal|center"
+                android:layout_marginLeft="6dp"
+                android:layout_marginTop="1dp"
+                android:gravity="center"
                 android:text="@string/text_ek6_string"
-                />
+                android:textColor="@color/rectangle_1223_color"
+                android:textStyle="bold" />
 
         </RelativeLayout>
 

@@ -49,7 +49,7 @@ public class Map_node extends AppCompatActivity {
     private Button btnZoomOut,btnSixFloor,btnGroundFloor,btnFiveFloor,btnSecondFloor;
     private boolean isDataCollectionCompleted=false;
     private RequestQueue requestQueue;
-    public double setFloor =6.0;
+    public double setFloor =1.0;
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 200;
     private String nodedatastring = "",edgeDataString="";
@@ -70,6 +70,8 @@ public class Map_node extends AppCompatActivity {
         btnSecondFloor = findViewById(R.id.two);
         btnQRScan = findViewById(R.id.QRCode);
 
+
+        new FetchNodeDataTask().execute();
 
         btnQRScan.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(Map_node.this, Manifest.permission.CAMERA)
