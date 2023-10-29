@@ -115,7 +115,7 @@ public class PathMap extends AppCompatActivity {
                 if(!nodeInfo.isEmpty() || !edgeInfo.isEmpty()){
                     myCanvas.clearCanvas();
                     myCanvas.setPathNodeData(nodeInfo,edgeInfo);
-                    setFloor= floor_index;
+                    setFloor = floor_index;
                     new FetchNodeDataTask().execute();
                     nodeInfo="";
                     edgeInfo="";
@@ -199,8 +199,8 @@ public class PathMap extends AppCompatActivity {
                 //System.out.println(name);
                 //if(tempCoordinate.isEmpty()) System.out.println(name+" FOund");
 
-                float tempX = Float.parseFloat(tempCoordinates[0])*100*-1;
-                float tempY = Float.parseFloat(tempCoordinates[1])*100;
+                float tempX = Float.parseFloat(tempCoordinates[0])*50*-1;
+                float tempY = Float.parseFloat(tempCoordinates[1])*50;
                 float tempZ = Float.parseFloat(tempCoordinates[2]);
                 if(prev_floor!=-1 && tempZ!=prev_floor){
                     //System.out.println(nodeInfo);
@@ -248,7 +248,7 @@ public class PathMap extends AppCompatActivity {
         xAxis = Float.parseFloat(tempCoordinates[0]);
         yAxis=Float.parseFloat(tempCoordinates[1]);
         zAxis = Float.parseFloat(tempCoordinates[2]);
-        myCanvas.setCoordinates(xAxis*100*(-1),yAxis*100);
+        myCanvas.setCoordinates(xAxis*50*(-1),yAxis*50);
         startTracking();
 
     }
@@ -322,7 +322,7 @@ public class PathMap extends AppCompatActivity {
         zAxis = z;
         System.out.println(x+"   "+y);
         System.out.println(direction);
-        myCanvas.setCoordinates(xAxis*100*(-1), yAxis*100);
+        myCanvas.setCoordinates(xAxis*50*(-1), yAxis*50);
     }
     private void processAccelerometerData(float[] val){
         //send for calculation..

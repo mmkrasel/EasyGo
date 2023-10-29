@@ -18,7 +18,8 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="11dp"
+        android:backgroundTint="@color/blue"
         android:layout_toStartOf="@+id/btnZoomOut"
         android:text="QR" />
 
@@ -30,8 +31,9 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
+        android:backgroundTint="@color/blue"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="11dp"
         android:text="Zoom In" />
 
     <Button
@@ -43,6 +45,7 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="19dp"
         android:layout_marginBottom="11dp"
+        android:backgroundTint="@color/blue"
         android:layout_toStartOf="@+id/btnZoomIn"
         android:text="Zoom Out" />
 
@@ -52,6 +55,7 @@
         android:textSize="10dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
+        android:backgroundTint="@color/blue"
         android:layout_height="32dp"
 
         android:text="6TH FLOOR" />
@@ -61,6 +65,7 @@
         android:textSize="10dp"
         android:layout_below="@+id/six"
         android:layout_alignParentLeft="true"
+        android:backgroundTint="@color/blue"
         android:layout_height="32dp"
 
         android:text="5TH FLOOR" />
@@ -70,6 +75,7 @@
         android:layout_width="100dp"
         android:textSize="10dp"
         android:layout_height="32dp"
+        android:backgroundTint="@color/blue"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
         android:text="1ST FLOOR" />
@@ -78,6 +84,7 @@
         android:layout_width="100dp"
         android:textSize="10dp"
         android:layout_height="32dp"
+        android:backgroundTint="@color/blue"
         android:layout_below="@+id/ground"
         android:layout_alignParentRight="true"
         android:text="2nd FLOOR" />
