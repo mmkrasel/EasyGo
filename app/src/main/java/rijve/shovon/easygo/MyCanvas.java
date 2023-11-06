@@ -93,7 +93,7 @@ public class MyCanvas extends View {
     private void init() {
 
         paint4 = new Paint();
-        paint4.setColor(Color.WHITE);
+        paint4.setColor(Color.GREEN);
         paint4.setStyle(Paint.Style.FILL);
         paint4.setStrokeWidth(40f);
 
