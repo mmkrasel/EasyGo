@@ -289,7 +289,8 @@ public class PathMap extends AppCompatActivity {
     private void calcCoordinate() {
         float x=0,y=0,z=zAxis;
         float theta=0;
-        float walkingDistance = .50f;
+        
+        float walkingDistance = .6f;
         float direction = magnetometerInfo.getCurrentDegree();
         if(direction>0 && direction<90){
             theta = 90-direction;
