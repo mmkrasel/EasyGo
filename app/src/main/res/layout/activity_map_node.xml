@@ -2,11 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8F9FB"
     tools:context=".Map_node">
 
-    <rijve.shovon.easygo.MyCanvas
+    <com.easyGo.easygo.MyCanvas
         android:id="@+id/myCanvas"
         android:layout_width="match_parent"
+
         android:layout_height="match_parent" />
 
     <Button

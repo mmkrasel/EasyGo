@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'rijve.shovon.easygo'
+    namespace 'com.easyGo.easygo'
     compileSdk 33
 
     defaultConfig {
-        applicationId "rijve.shovon.easygo"
+        applicationId "com.easyGo.easygo"
         minSdk 25
         targetSdk 33
         versionCode 1
